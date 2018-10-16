@@ -23,6 +23,7 @@ import com.dyuproject.protostuff.runtime.RuntimeSchema;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +42,12 @@ public class SchemaCache {
 
     private Schema<?> get(final Class<?> cls, final Cache<Class<?>, Schema<?>> cache) {
         try {
-            return cache.get(cls, () -> RuntimeSchema.createFrom(cls));
+            return cache.get(cls, new Callable<Schema<?>>() {
+                @Override
+                public Schema<?> call() throws Exception {
+                    return RuntimeSchema.createFrom(cls);
+                }
+            });
         } catch (ExecutionException e) {
             return null;
         }

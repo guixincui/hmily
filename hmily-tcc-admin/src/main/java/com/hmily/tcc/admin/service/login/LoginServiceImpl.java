@@ -46,7 +46,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public Boolean login(final String userName, final String password) {
-        LogUtil.info(LOGGER, "输入的用户名密码为:{}", () -> userName + "," + password);
+        LOGGER.info("输入的用户名密码为:{}", userName + "," + password);
         if (userName.equals(this.userName) && password.equals(this.password)) {
             LOGIN_SUCCESS = true;
             return Boolean.TRUE;

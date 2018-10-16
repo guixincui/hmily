@@ -36,10 +36,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -66,13 +63,16 @@ public class HmilyTransactionEventPublisher implements DisposableBean {
      * @param threadSize this is disruptor consumer thread size.
      */
     public void start(final int bufferSize, final int threadSize) {
-        disruptor = new Disruptor<>(new HmilyTransactionEventFactory(), bufferSize, r -> {
-            AtomicInteger index = new AtomicInteger(1);
-            return new Thread(null, r, "disruptor-thread-" + index.getAndIncrement());
+        disruptor = new Disruptor<>(new HmilyTransactionEventFactory(), bufferSize, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                AtomicInteger index = new AtomicInteger(1);
+                return new Thread(null, r, "disruptor-thread-" + index.getAndIncrement());
+            }
         }, ProducerType.MULTI, new BlockingWaitStrategy());
 
         final Executor executor = new ThreadPoolExecutor(threadSize, threadSize, 0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
+                new LinkedBlockingQueue<Runnable>(),
                 HmilyThreadFactory.create("hmily-log-disruptor", false),
                 new ThreadPoolExecutor.AbortPolicy());
 

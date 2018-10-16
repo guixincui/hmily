@@ -41,8 +41,6 @@ import com.weibo.api.motan.util.ReflectUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Method;
-import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * MotanHmilyTransactionFilter.
@@ -74,20 +72,22 @@ public class MotanHmilyTransactionFilter implements Filter {
             //他妈的 这里还要拿方法参数类型
             clazz = ReflectUtil.forName(interfaceName);
             final Method[] methods = clazz.getMethods();
-            args = Stream.of(methods)
-                    .filter(m -> m.getName().equals(methodName))
-                    .findFirst()
-                    .map(Method::getParameterTypes).get();
+            for(Method m : methods) {
+                if(m.getName().equals(methodName)) {
+                    args = m.getParameterTypes();
+                    break;
+                }
+            }
             method = clazz.getMethod(methodName, args);
             tcc = method.getAnnotation(Tcc.class);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (Objects.nonNull(tcc)) {
+        if (null != tcc) {
             try {
                 final HmilyTransactionExecutor hmilyTransactionExecutor = SpringBeanUtils.getInstance().getBean(HmilyTransactionExecutor.class);
                 final TccTransactionContext tccTransactionContext = TransactionContextLocal.getInstance().get();
-                if (Objects.nonNull(tccTransactionContext)) {
+                if (null != tccTransactionContext) {
                     if (tccTransactionContext.getRole() == TccRoleEnum.LOCAL.getCode()) {
                         tccTransactionContext.setRole(TccRoleEnum.INLINE.getCode());
                     }
@@ -115,7 +115,7 @@ public class MotanHmilyTransactionFilter implements Filter {
     private Participant buildParticipant(final TccTransactionContext tccTransactionContext,
                                          final Tcc tcc, final Method method, final Class clazz,
                                          final Object[] arguments, final Class... args) throws TccRuntimeException {
-        if (Objects.isNull(tccTransactionContext)
+        if (null != tccTransactionContext
                 || (TccActionEnum.TRYING.getCode() != tccTransactionContext.getAction())) {
             return null;
         }

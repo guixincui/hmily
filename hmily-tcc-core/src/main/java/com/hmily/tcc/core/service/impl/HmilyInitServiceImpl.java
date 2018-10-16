@@ -22,7 +22,6 @@ import com.hmily.tcc.common.enums.RepositorySupportEnum;
 import com.hmily.tcc.common.enums.SerializeEnum;
 import com.hmily.tcc.common.serializer.KryoSerializer;
 import com.hmily.tcc.common.serializer.ObjectSerializer;
-import com.hmily.tcc.common.utils.LogUtil;
 import com.hmily.tcc.common.utils.ServiceBootstrap;
 import com.hmily.tcc.core.coordinator.CoordinatorService;
 import com.hmily.tcc.core.disruptor.publisher.HmilyTransactionEventPublisher;
@@ -35,9 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Objects;
+import java.util.Iterator;
 import java.util.ServiceLoader;
-import java.util.stream.StreamSupport;
 
 /**
  * hmily tcc init service.
@@ -69,16 +67,21 @@ public class HmilyInitServiceImpl implements HmilyInitService {
      */
     @Override
     public void initialization(final TccConfig tccConfig) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> LOGGER.info("hmily shutdown now")));
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                LOGGER.info("hmily shutdown now");
+            }
+        }));
         try {
             loadSpiSupport(tccConfig);
             hmilyTransactionEventPublisher.start(tccConfig.getBufferSize(), tccConfig.getConsumerThreads());
             coordinatorService.start(tccConfig);
         } catch (Exception ex) {
-            LogUtil.error(LOGGER, " hmily init exception:{}", ex::getMessage);
+            LOGGER.error(" hmily init exception:{}", ex.getMessage());
             System.exit(1);
         }
-        LogUtil.info(LOGGER, () -> "hmily init success!");
+        LOGGER.info("hmily init success!");
     }
 
     /**
@@ -90,15 +93,31 @@ public class HmilyInitServiceImpl implements HmilyInitService {
         //spi serialize
         final SerializeEnum serializeEnum = SerializeEnum.acquire(tccConfig.getSerializer());
         final ServiceLoader<ObjectSerializer> objectSerializers = ServiceBootstrap.loadAll(ObjectSerializer.class);
-        final ObjectSerializer serializer = StreamSupport.stream(objectSerializers.spliterator(), false)
-                .filter(objectSerializer -> Objects.equals(objectSerializer.getScheme(), serializeEnum.getSerialize()))
-                .findFirst().orElse(new KryoSerializer());
+        ObjectSerializer serializer = null;
+        for (Iterator<ObjectSerializer> it = objectSerializers.iterator(); it.hasNext(); ) {
+            ObjectSerializer item = it.next();
+            if (item.getScheme() != null && item.getScheme().equals(serializeEnum)) {
+                serializer = item;
+                break;
+            }
+        }
+        if (serializer == null) {
+            serializer = new KryoSerializer();
+        }
         //spi repository
         final RepositorySupportEnum repositorySupportEnum = RepositorySupportEnum.acquire(tccConfig.getRepositorySupport());
         final ServiceLoader<CoordinatorRepository> recoverRepositories = ServiceBootstrap.loadAll(CoordinatorRepository.class);
-        final CoordinatorRepository repository = StreamSupport.stream(recoverRepositories.spliterator(), false)
-                .filter(recoverRepository -> Objects.equals(recoverRepository.getScheme(), repositorySupportEnum.getSupport()))
-                .findFirst().orElse(new JdbcCoordinatorRepository());
+        CoordinatorRepository repository = null;
+        for (Iterator<CoordinatorRepository> it = recoverRepositories.iterator(); it.hasNext(); ) {
+            CoordinatorRepository item = it.next();
+            if (item.getScheme() != null && item.getScheme().equals(repositorySupportEnum.getSupport())) {
+                repository = item;
+                break;
+            }
+        }
+        if (repository == null) {
+            repository = new JdbcCoordinatorRepository();
+        }
         repository.setSerializer(serializer);
         SpringBeanUtils.getInstance().registerBean(CoordinatorRepository.class.getName(), repository);
     }

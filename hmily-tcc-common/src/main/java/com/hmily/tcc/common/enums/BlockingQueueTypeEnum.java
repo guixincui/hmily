@@ -63,11 +63,12 @@ public enum BlockingQueueTypeEnum {
      * @return the blocking queue type enum
      */
     public static BlockingQueueTypeEnum fromString(final String value) {
-        Optional<BlockingQueueTypeEnum> blockingQueueTypeEnum =
-                Arrays.stream(BlockingQueueTypeEnum.values())
-                        .filter(v -> Objects.equals(v.getValue(), value))
-                        .findFirst();
-        return blockingQueueTypeEnum.orElse(BlockingQueueTypeEnum.LINKED_BLOCKING_QUEUE);
+        for (BlockingQueueTypeEnum val : BlockingQueueTypeEnum.values()) {
+            if (Objects.equals(val.getValue(), value)) {
+                return val;
+            }
+        }
+        return BlockingQueueTypeEnum.LINKED_BLOCKING_QUEUE;
     }
 
     @Override

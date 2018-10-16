@@ -19,6 +19,7 @@ package com.hmily.tcc.core.spi.repository;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.hmily.tcc.common.bean.adapter.CoordinatorRepositoryAdapter;
 import com.hmily.tcc.common.bean.entity.TccTransaction;
 import com.hmily.tcc.common.config.TccConfig;
@@ -31,7 +32,6 @@ import com.hmily.tcc.common.jedis.JedisClientCluster;
 import com.hmily.tcc.common.jedis.JedisClientSentinel;
 import com.hmily.tcc.common.jedis.JedisClientSingle;
 import com.hmily.tcc.common.serializer.ObjectSerializer;
-import com.hmily.tcc.common.utils.LogUtil;
 import com.hmily.tcc.common.utils.RepositoryConvertUtils;
 import com.hmily.tcc.common.utils.RepositoryPathUtils;
 import com.hmily.tcc.core.spi.CoordinatorRepository;
@@ -48,7 +48,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * redis impl.
@@ -166,9 +165,13 @@ public class RedisCoordinatorRepository implements CoordinatorRepository {
     @Override
     public List<TccTransaction> listAllByDelay(final Date date) {
         final List<TccTransaction> tccTransactions = listAll();
-        return tccTransactions.stream()
-                .filter(tccTransaction -> tccTransaction.getLastTime().compareTo(date) > 0)
-                .collect(Collectors.toList());
+        List<TccTransaction> result = Lists.newArrayList();
+        for(TccTransaction transaction : tccTransactions) {
+            if(transaction.getLastTime().compareTo(date) > 0) {
+                result.add(transaction);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -178,7 +181,7 @@ public class RedisCoordinatorRepository implements CoordinatorRepository {
         try {
             buildJedisPool(tccRedisConfig);
         } catch (Exception e) {
-            LogUtil.error(LOGGER, "redis init error please check you config:{}", e::getMessage);
+            LOGGER.error("redis init error please check you config:{}", e.getMessage());
             throw new TccRuntimeException(e);
         }
     }
@@ -208,17 +211,17 @@ public class RedisCoordinatorRepository implements CoordinatorRepository {
         config.setNumTestsPerEvictionRun(tccRedisConfig.getNumTestsPerEvictionRun());
         JedisPool jedisPool;
         if (tccRedisConfig.getCluster()) {
-            LogUtil.info(LOGGER, () -> "build redis cluster ............");
+            LOGGER.info("build redis cluster ............");
             final String clusterUrl = tccRedisConfig.getClusterUrl();
-            final Set<HostAndPort> hostAndPorts =
-                    Splitter.on(";")
-                            .splitToList(clusterUrl)
-                            .stream()
-                            .map(HostAndPort::parseString).collect(Collectors.toSet());
+
+            final Set<HostAndPort> hostAndPorts = Sets.newHashSet();
+            for(String str : Splitter.on(";").splitToList(clusterUrl)) {
+                hostAndPorts.add(HostAndPort.parseString(str));
+            }
             JedisCluster jedisCluster = new JedisCluster(hostAndPorts, config);
             jedisClient = new JedisClientCluster(jedisCluster);
         } else if (tccRedisConfig.getSentinel()) {
-            LogUtil.info(LOGGER, () -> "build redis sentinel ............");
+            LOGGER.info("build redis sentinel ............");
             final String sentinelUrl = tccRedisConfig.getSentinelUrl();
             final Set<String> hostAndPorts =
                     new HashSet<>(Splitter.on(";")

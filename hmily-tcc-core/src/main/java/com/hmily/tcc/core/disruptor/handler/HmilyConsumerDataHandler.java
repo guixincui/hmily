@@ -25,18 +25,21 @@ public class HmilyConsumerDataHandler implements WorkHandler<HmilyTransactionEve
 
     @Override
     public void onEvent(final HmilyTransactionEvent event) {
-        executor.execute(() -> {
-            if (event.getType() == EventTypeEnum.SAVE.getCode()) {
-                coordinatorService.save(event.getTccTransaction());
-            } else if (event.getType() == EventTypeEnum.UPDATE_PARTICIPANT.getCode()) {
-                coordinatorService.updateParticipant(event.getTccTransaction());
-            } else if (event.getType() == EventTypeEnum.UPDATE_STATUS.getCode()) {
-                final TccTransaction tccTransaction = event.getTccTransaction();
-                coordinatorService.updateStatus(tccTransaction.getTransId(), tccTransaction.getStatus());
-            } else if (event.getType() == EventTypeEnum.DELETE.getCode()) {
-                coordinatorService.remove(event.getTccTransaction().getTransId());
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (event.getType() == EventTypeEnum.SAVE.getCode()) {
+                    coordinatorService.save(event.getTccTransaction());
+                } else if (event.getType() == EventTypeEnum.UPDATE_PARTICIPANT.getCode()) {
+                    coordinatorService.updateParticipant(event.getTccTransaction());
+                } else if (event.getType() == EventTypeEnum.UPDATE_STATUS.getCode()) {
+                    final TccTransaction tccTransaction = event.getTccTransaction();
+                    coordinatorService.updateStatus(tccTransaction.getTransId(), tccTransaction.getStatus());
+                } else if (event.getType() == EventTypeEnum.DELETE.getCode()) {
+                    coordinatorService.remove(event.getTccTransaction().getTransId());
+                }
+                event.clear();
             }
-            event.clear();
         });
     }
 }

@@ -19,9 +19,14 @@ package com.hmily.tcc.springcloud.feign;
 
 import feign.Feign;
 import feign.InvocationHandlerFactory;
+import feign.Target;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * HmilyRestTemplateConfiguration.
@@ -47,10 +52,13 @@ public class HmilyRestTemplateConfiguration {
      */
     @Bean
     public InvocationHandlerFactory invocationHandlerFactory() {
-        return (target, dispatch) -> {
-            HmilyFeignHandler handler = new HmilyFeignHandler();
-            handler.setHandlers(dispatch);
-            return handler;
+        return new InvocationHandlerFactory() {
+            @Override
+            public InvocationHandler create(Target target, Map<Method, MethodHandler> dispatch) {
+                HmilyFeignHandler handler = new HmilyFeignHandler();
+                handler.setHandlers(dispatch);
+                return handler;
+            }
         };
     }
 

@@ -17,6 +17,8 @@
 
 package com.hmily.tcc.admin.service.compensate;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.hmily.tcc.admin.helper.ConvertHelper;
 import com.hmily.tcc.admin.helper.PageHelper;
@@ -34,10 +36,10 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * redis impl.
@@ -62,26 +64,33 @@ public class RedisCompensationServiceImpl implements CompensationService {
         List<TccCompensationVO> voList;
         int totalCount;
         //如果只查 重试条件的
-        if (StringUtils.isBlank(query.getTransId()) && Objects.nonNull(query.getRetry())) {
+        if (StringUtils.isBlank(query.getTransId()) && null != query.getRetry()) {
             keys = jedisClient.keys((redisKeyPrefix + "*").getBytes());
             final List<TccCompensationVO> all = findAll(keys);
-            final List<TccCompensationVO> collect =
-                    all.stream()
-                            .filter(vo -> vo.getRetriedCount() < query.getRetry())
-                            .collect(Collectors.toList());
+            final List<TccCompensationVO> collect = Lists.newArrayList();
+            for (TccCompensationVO vo : all) {
+                if (vo.getRetriedCount() < query.getRetry()) {
+                    collect.add(vo);
+                }
+            }
             totalCount = collect.size();
-            voList = collect.stream().skip(start).limit(pageSize).collect(Collectors.toList());
-        } else if (StringUtils.isNoneBlank(query.getTransId()) && Objects.isNull(query.getRetry())) {
-            keys = Sets.newHashSet(String.join(":", redisKeyPrefix, query.getTransId()).getBytes());
+            voList = Lists.newArrayList();
+            for (int i = start; i < collect.size() && i < start + pageSize; i++) {
+                voList.add(collect.get(i));
+            }
+        } else if (StringUtils.isNoneBlank(query.getTransId()) && null != query.getRetry()) {
+            keys = Sets.newHashSet(Joiner.on(":").join(redisKeyPrefix, query.getTransId()).getBytes());
             totalCount = keys.size();
             voList = findAll(keys);
-        } else if (StringUtils.isNoneBlank(query.getTransId()) && Objects.nonNull(query.getRetry())) {
-            keys = Sets.newHashSet(String.join(":", redisKeyPrefix, query.getTransId()).getBytes());
+        } else if (StringUtils.isNoneBlank(query.getTransId()) && null != query.getRetry()) {
+            keys = Sets.newHashSet(Joiner.on(":").join(redisKeyPrefix, query.getTransId()).getBytes());
             totalCount = keys.size();
-            voList = findAll(keys)
-                    .stream()
-                    .filter(vo -> vo.getRetriedCount() < query.getRetry())
-                    .collect(Collectors.toList());
+            voList = Lists.newArrayList();
+            for (TccCompensationVO vo : findAll(keys)) {
+                if (vo.getRetriedCount() < query.getRetry()) {
+                    voList.add(vo);
+                }
+            }
         } else {
             keys = jedisClient.keys((redisKeyPrefix + "*").getBytes());
             if (keys.size() <= 0 || keys.size() < start) {
@@ -116,15 +125,17 @@ public class RedisCompensationServiceImpl implements CompensationService {
             return Boolean.FALSE;
         }
         String keyPrefix = RepositoryPathUtils.buildRedisKeyPrefix(applicationName);
-        final String[] keys = ids.stream()
-                .map(id -> RepositoryPathUtils.buildRedisKey(keyPrefix, id)).toArray(String[]::new);
-        jedisClient.del(keys);
+        final List<String> keys = Lists.newArrayList();
+        for(String id : ids) {
+            keys.add(RepositoryPathUtils.buildRedisKey(keyPrefix, id));
+        }
+        jedisClient.del(keys.toArray(new String[]{}));
         return Boolean.TRUE;
     }
 
     @Override
     public Boolean updateRetry(final String id, final Integer retry, final String appName) {
-        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || Objects.isNull(retry)) {
+        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null != retry) {
             return Boolean.FALSE;
         }
         String keyPrefix = RepositoryPathUtils.buildRedisKeyPrefix(appName);
@@ -144,19 +155,32 @@ public class RedisCompensationServiceImpl implements CompensationService {
     }
 
     private List<TccCompensationVO> findAll(final Set<byte[]> keys) {
-        return keys.parallelStream()
-                .map(this::buildVOByKey)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        List<TccCompensationVO> list = Lists.newArrayList();
+        for(byte[] key : keys) {
+            TccCompensationVO vo = buildVOByKey(key);
+            if(vo != null) {
+                list.add(vo);
+            }
+        }
+        return list;
     }
 
     private List<TccCompensationVO> findByPage(final Set<byte[]> keys, final int start, final int pageSize) {
-        return keys.parallelStream()
-                .skip(start)
-                .limit(pageSize)
-                .map(this::buildVOByKey)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        List<TccCompensationVO> list = Lists.newArrayList();
+        int index = 0;
+        for (Iterator<byte[]> it = keys.iterator(); it.hasNext(); ) {
+            if (index < start) {
+                continue;
+            }
+            if (index > start + pageSize || index > keys.size()) {
+                break;
+            }
+            TccCompensationVO vo = buildVOByKey(it.next());
+            if (vo != null) {
+                list.add(vo);
+            }
+        }
+        return list;
     }
 
 }

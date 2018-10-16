@@ -17,18 +17,17 @@
 
 package com.hmily.tcc.core.spi.repository;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hmily.tcc.common.bean.entity.Participant;
 import com.hmily.tcc.common.bean.entity.TccTransaction;
 import com.hmily.tcc.common.config.TccConfig;
 import com.hmily.tcc.common.config.TccDbConfig;
-import com.hmily.tcc.common.constant.CommonConstant;
 import com.hmily.tcc.common.enums.RepositorySupportEnum;
 import com.hmily.tcc.common.exception.TccException;
 import com.hmily.tcc.common.exception.TccRuntimeException;
 import com.hmily.tcc.common.serializer.ObjectSerializer;
 import com.hmily.tcc.common.utils.DbTypeUtils;
-import com.hmily.tcc.common.utils.LogUtil;
 import com.hmily.tcc.common.utils.RepositoryPathUtils;
 import com.hmily.tcc.core.helper.SqlHelper;
 import com.hmily.tcc.core.spi.CoordinatorRepository;
@@ -40,13 +39,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.*;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 import java.util.Date;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * jdbc impl.
@@ -139,10 +134,11 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
         String selectSql = "select * from " + tableName + " where trans_id=?";
         List<Map<String, Object>> list = executeQuery(selectSql, id);
         if (CollectionUtils.isNotEmpty(list)) {
-            return list.stream()
-                    .filter(Objects::nonNull)
-                    .map(this::buildByResultMap)
-                    .collect(Collectors.toList()).get(0);
+            for(Map<String, Object> item : list) {
+                if(item != null) {
+                    return buildByResultMap(item);
+                }
+            }
         }
         return null;
     }
@@ -153,10 +149,13 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
         String selectSql = "select * from " + tableName;
         List<Map<String, Object>> list = executeQuery(selectSql);
         if (CollectionUtils.isNotEmpty(list)) {
-            return list.stream()
-                    .filter(Objects::nonNull)
-                    .map(this::buildByResultMap)
-                    .collect(Collectors.toList());
+            List<TccTransaction> result = Lists.newArrayList();
+            for(Map<String, Object> item : list) {
+                if(item != null) {
+                    result.add(buildByResultMap(item));
+                }
+            }
+            return result;
         }
         return Collections.emptyList();
     }
@@ -167,9 +166,13 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
         String sb = "select * from " + tableName + " where last_time <?";
         List<Map<String, Object>> list = executeQuery(sb, date);
         if (CollectionUtils.isNotEmpty(list)) {
-            return list.stream().filter(Objects::nonNull)
-                    .map(this::buildByResultMap)
-                    .collect(Collectors.toList());
+            List<TccTransaction> result = Lists.newArrayList();
+            for(Map<String, Object> item : list) {
+                if(item != null) {
+                    result.add(buildByResultMap(item));
+                }
+            }
+            return result;
         }
         return Collections.emptyList();
     }
@@ -213,7 +216,9 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
                 hikariDataSource.setMaxLifetime(tccDbConfig.getMaxLifetime());
                 hikariDataSource.setConnectionTestQuery(tccDbConfig.getConnectionTestQuery());
                 if (tccDbConfig.getDataSourcePropertyMap() != null && !tccDbConfig.getDataSourcePropertyMap().isEmpty()) {
-                    tccDbConfig.getDataSourcePropertyMap().forEach(hikariDataSource::addDataSourceProperty);
+                    for (String key : tccDbConfig.getDataSourcePropertyMap().keySet()) {
+                        hikariDataSource.addDataSourceProperty(key, tccDbConfig.getDataSourcePropertyMap().get(key));
+                    }
                 }
                 dataSource = hikariDataSource;
             }
@@ -222,7 +227,7 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
             this.currentDBType = DbTypeUtils.buildByDriverClassName(tccDbConfig.getDriverClassName());
             executeUpdate(SqlHelper.buildCreateTableSql(tccDbConfig.getDriverClassName(), tableName));
         } catch (Exception e) {
-            LogUtil.error(LOGGER, "hmily jdbc log init exception please check config:{}", e::getMessage);
+            LOGGER.error("hmily jdbc log init exception please check config:{}", e.getMessage());
             throw new TccRuntimeException(e);
         }
     }
@@ -255,9 +260,9 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
 
     private Object convertDataTypeToDB(final Object params) {
         //https://jdbc.postgresql.org/documentation/head/8-date-time.html
-        if (CommonConstant.DB_POSTGRESQL.equals(currentDBType) && params instanceof java.util.Date) {
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli(((Date) params).getTime()), ZoneId.systemDefault());
-        }
+        //if (CommonConstant.DB_POSTGRESQL.equals(currentDBType) && params instanceof java.util.Date) {
+        //    return LocalDateTime.ofInstant(Instant.ofEpochMilli(((Date) params).getTime()), ZoneId.systemDefault());
+        //}
         return params;
     }
 

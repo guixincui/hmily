@@ -28,7 +28,6 @@ import com.hmily.tcc.common.enums.EventTypeEnum;
 import com.hmily.tcc.common.enums.TccActionEnum;
 import com.hmily.tcc.common.enums.TccRoleEnum;
 import com.hmily.tcc.common.exception.TccRuntimeException;
-import com.hmily.tcc.common.utils.LogUtil;
 import com.hmily.tcc.core.cache.TccTransactionCacheManager;
 import com.hmily.tcc.core.concurrent.threadlocal.TransactionContextLocal;
 import com.hmily.tcc.core.disruptor.publisher.HmilyTransactionEventPublisher;
@@ -46,8 +45,6 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 /**
@@ -83,7 +80,7 @@ public class HmilyTransactionExecutor {
      * @return TccTransaction
      */
     public TccTransaction begin(final ProceedingJoinPoint point) {
-        LogUtil.debug(LOGGER, () -> "......hmily transaction！start....");
+        LOGGER.debug("......hmily transaction！start....");
         //build tccTransaction
         final TccTransaction tccTransaction = buildTccTransaction(point, TccRoleEnum.START.getCode(), null);
         //save tccTransaction in threadLocal
@@ -109,7 +106,7 @@ public class HmilyTransactionExecutor {
      * @return TccTransaction
      */
     public TccTransaction beginParticipant(final TccTransactionContext context, final ProceedingJoinPoint point) {
-        LogUtil.debug(LOGGER, "...Participant hmily transaction ！start..：{}", context::toString);
+        LOGGER.debug("...Participant hmily transaction ！start..：{}", context.toString());
         final TccTransaction tccTransaction = buildTccTransaction(point, TccRoleEnum.PROVIDER.getCode(), context.getTransId());
         //cache by guava
         TccTransactionCacheManager.getInstance().cacheTccTransaction(tccTransaction);
@@ -163,14 +160,14 @@ public class HmilyTransactionExecutor {
      * @param participant {@linkplain Participant}
      */
     public void enlistParticipant(final Participant participant) {
-        if (Objects.isNull(participant)) {
+        if (participant == null) {
             return;
         }
-        Optional.ofNullable(getCurrentTransaction())
-                .ifPresent(c -> {
-                    c.registerParticipant(participant);
-                    updateParticipant(c);
-                });
+        TccTransaction transaction = getCurrentTransaction();
+        if(transaction != null) {
+            transaction.registerParticipant(participant);
+            updateParticipant(transaction);
+        }
     }
 
     /**
@@ -180,17 +177,16 @@ public class HmilyTransactionExecutor {
      * @param participant {@linkplain Participant}
      */
     public void registerByNested(final String transId, final Participant participant) {
-        if (Objects.isNull(participant)
-                || Objects.isNull(participant.getCancelTccInvocation())
-                || Objects.isNull(participant.getConfirmTccInvocation())) {
+        if (null == participant
+                || null == participant.getCancelTccInvocation()
+                || null == participant.getConfirmTccInvocation()) {
             return;
         }
         final TccTransaction tccTransaction = TccTransactionCacheManager.getInstance().getTccTransaction(transId);
-        Optional.ofNullable(tccTransaction)
-                .ifPresent(c -> {
-                    c.registerParticipant(participant);
-                    updateParticipant(c);
-                });
+        if(null != tccTransaction) {
+            tccTransaction.registerParticipant(participant);
+            updateParticipant(tccTransaction);
+        }
     }
 
     /**
@@ -202,8 +198,8 @@ public class HmilyTransactionExecutor {
      * @throws TccRuntimeException ex
      */
     public void confirm(final TccTransaction currentTransaction) throws TccRuntimeException {
-        LogUtil.debug(LOGGER, () -> "tcc confirm .......！start");
-        if (Objects.isNull(currentTransaction) || CollectionUtils.isEmpty(currentTransaction.getParticipants())) {
+        LOGGER.debug("tcc confirm .......！start");
+        if (null == currentTransaction || CollectionUtils.isEmpty(currentTransaction.getParticipants())) {
             return;
         }
         currentTransaction.setStatus(TccActionEnum.CONFIRMING.getCode());
@@ -221,7 +217,7 @@ public class HmilyTransactionExecutor {
                     TransactionContextLocal.getInstance().set(context);
                     executeParticipantMethod(participant.getConfirmTccInvocation());
                 } catch (Exception e) {
-                    LogUtil.error(LOGGER, "execute confirm :{}", () -> e);
+                    LOGGER.error("execute confirm :{}", e);
                     success = false;
                     failList.add(participant);
                 }
@@ -236,8 +232,8 @@ public class HmilyTransactionExecutor {
      * @param currentTransaction {@linkplain TccTransaction}
      */
     public void cancel(final TccTransaction currentTransaction) {
-        LogUtil.debug(LOGGER, () -> "tcc cancel ...........start!");
-        if (Objects.isNull(currentTransaction) || CollectionUtils.isEmpty(currentTransaction.getParticipants())) {
+        LOGGER.debug("tcc cancel ...........start!");
+        if (null == currentTransaction || CollectionUtils.isEmpty(currentTransaction.getParticipants())) {
             return;
         }
         //if cc pattern，can not execute cancel
@@ -262,7 +258,7 @@ public class HmilyTransactionExecutor {
                     TransactionContextLocal.getInstance().set(context);
                     executeParticipantMethod(participant.getCancelTccInvocation());
                 } catch (Throwable e) {
-                    LogUtil.error(LOGGER, "execute cancel ex:{}", () -> e);
+                    LOGGER.error("execute cancel ex:{}", e);
                     success = false;
                     failList.add(participant);
                 }
@@ -288,16 +284,20 @@ public class HmilyTransactionExecutor {
         if (CollectionUtils.isNotEmpty(participants)) {
             if (currentTransaction.getStatus() == TccActionEnum.TRYING.getCode()
                     && currentTransaction.getRole() == TccRoleEnum.START.getCode()) {
-                return participants.stream()
-                        .limit(participants.size())
-                        .filter(Objects::nonNull).collect(Collectors.toList());
+                List<Participant> result = Lists.newArrayList();
+                for(Participant participant : participants) {
+                    if(participant != null) {
+                        result.add(participant);
+                    }
+                }
+                return result;
             }
         }
         return participants;
     }
 
     private void executeParticipantMethod(final TccInvocation tccInvocation) throws Exception {
-        if (Objects.nonNull(tccInvocation)) {
+        if (null != tccInvocation) {
             final Class clazz = tccInvocation.getTargetClass();
             final String method = tccInvocation.getMethodName();
             final Object[] args = tccInvocation.getArgs();

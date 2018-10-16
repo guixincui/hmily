@@ -18,6 +18,7 @@
 package com.hmily.tcc.admin.spi;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.Sets;
 import com.hmily.tcc.admin.service.CompensationService;
 import com.hmily.tcc.admin.service.compensate.*;
 import com.hmily.tcc.common.jedis.JedisClient;
@@ -29,6 +30,7 @@ import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +41,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.core.MongoClientFactoryBean;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisPool;
@@ -54,7 +55,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 /**
  * CompensationConfiguration.
@@ -128,9 +128,10 @@ public class CompensationConfiguration {
             if (cluster) {
                 final String clusterUrl = env.getProperty("compensation.redis.clusterUrl");
                 assert clusterUrl != null;
-                final Set<HostAndPort> hostAndPorts = Splitter.on(";")
-                        .splitToList(clusterUrl).stream()
-                        .map(HostAndPort::parseString).collect(Collectors.toSet());
+                final Set<HostAndPort> hostAndPorts = Sets.newHashSet();
+                for(String str : Splitter.on(";").splitToList(clusterUrl)) {
+                    hostAndPorts.add(HostAndPort.parseString(str));
+                }
                 JedisCluster jedisCluster = new JedisCluster(hostAndPorts, config);
                 jedisClient = new JedisClientCluster(jedisCluster);
             } else if (sentinel) {
@@ -202,10 +203,13 @@ public class CompensationConfiguration {
             try {
                 final String host = env.getProperty("compensation.zookeeper.host", "2181");
                 final String sessionTimeOut = env.getProperty("compensation.zookeeper.sessionTimeOut", "3000");
-                zooKeeper = new ZooKeeper(host, Integer.parseInt(sessionTimeOut), watchedEvent -> {
-                    if (watchedEvent.getState() == Watcher.Event.KeeperState.SyncConnected) {
-                        // 放开闸门, wait在connect方法上的线程将被唤醒
-                        LOCK.unlock();
+                zooKeeper = new ZooKeeper(host, Integer.parseInt(sessionTimeOut), new Watcher() {
+                    @Override
+                    public void process(WatchedEvent watchedEvent) {
+                        if (watchedEvent.getState() == Watcher.Event.KeeperState.SyncConnected) {
+                            // 放开闸门, wait在connect方法上的线程将被唤醒
+                            LOCK.unlock();
+                        }
                     }
                 });
                 LOCK.lock();

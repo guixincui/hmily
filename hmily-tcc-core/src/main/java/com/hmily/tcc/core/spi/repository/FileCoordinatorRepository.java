@@ -32,6 +32,7 @@ import com.hmily.tcc.core.spi.CoordinatorRepository;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -148,10 +149,14 @@ public class FileCoordinatorRepository implements CoordinatorRepository {
 
     @Override
     public List<TccTransaction> listAllByDelay(final Date date) {
+        List<TccTransaction> result = new ArrayList<>();
         final List<TccTransaction> tccTransactions = listAll();
-        return tccTransactions.stream()
-                .filter(tccTransaction -> tccTransaction.getLastTime().compareTo(date) < 0)
-                .collect(Collectors.toList());
+        for (TccTransaction trans : tccTransactions) {
+            if(trans.getLastTime().compareTo(date) < 0) {
+                result.add(trans);
+            }
+        }
+        return result;
     }
 
     @Override

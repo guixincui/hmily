@@ -7,7 +7,7 @@
     <groupId>com.hmily.tcc</groupId>
     <artifactId>hmily-tcc</artifactId>
     <packaging>pom</packaging>
-    <version>1.2.1-RELEASE</version>
+    <version>1.2.1-JDK1.7-RELEASE</version>
     <name>hmily-tcc</name>
     <modules>
         <module>hmily-tcc-common</module>
@@ -51,7 +51,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jdk.version>1.8</jdk.version>
+        <jdk.version>1.7</jdk.version>
         <spring.version>5.0.7.RELEASE</spring.version>
         <spring-cloud.version>Finchley.RELEASE</spring-cloud.version>
         <dubbo.version>2.6.2</dubbo.version>
@@ -533,6 +533,19 @@
             <url>https://repo.spring.io/libs-release</url>
         </pluginRepository>
     </pluginRepositories>
+
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <name>Nexus Release Repository</name>
+            <url>http://maven.51talk.com/nexus/content/repositories/releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>Nexus Snapshot Repository</name>
+            <url>http://maven.51talk.com/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 
 </project>

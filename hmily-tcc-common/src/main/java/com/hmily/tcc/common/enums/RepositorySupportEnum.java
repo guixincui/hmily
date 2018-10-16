@@ -20,9 +20,7 @@ package com.hmily.tcc.common.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
 
 /**
@@ -67,10 +65,12 @@ public enum RepositorySupportEnum {
      * @return the compensate cache type enum
      */
     public static RepositorySupportEnum acquire(final String support) {
-        Optional<RepositorySupportEnum> repositorySupportEnum =
-                Arrays.stream(RepositorySupportEnum.values())
-                        .filter(v -> Objects.equals(v.getSupport(), support))
-                        .findFirst();
-        return repositorySupportEnum.orElse(RepositorySupportEnum.DB);
+        RepositorySupportEnum[] values = RepositorySupportEnum.values();
+        for(RepositorySupportEnum val : values) {
+            if(Objects.equals(val.getSupport(), support)) {
+                return val;
+            }
+        }
+        return RepositorySupportEnum.DB;
     }
 }

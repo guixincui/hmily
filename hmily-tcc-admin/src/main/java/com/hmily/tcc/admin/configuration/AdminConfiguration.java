@@ -29,9 +29,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.ServiceLoader;
-import java.util.stream.StreamSupport;
 
 /**
  * AdminConfiguration.
@@ -66,10 +66,13 @@ public class AdminConfiguration {
                     SerializeEnum.acquire(env.getProperty("recover.serializer.support"));
             final ServiceLoader<ObjectSerializer> objectSerializers =
                     ServiceBootstrap.loadAll(ObjectSerializer.class);
-            return StreamSupport.stream(objectSerializers.spliterator(), false)
-                    .filter(objectSerializer ->
-                            Objects.equals(objectSerializer.getScheme(), serializeEnum.getSerialize()))
-                    .findFirst().orElse(new KryoSerializer());
+            for (Iterator<ObjectSerializer> it = objectSerializers.iterator(); it.hasNext(); ) {
+                ObjectSerializer objectSerializer = it.next();
+                if (Objects.equals(objectSerializer.getScheme(), serializeEnum.getSerialize())) {
+                    return objectSerializer;
+                }
+            }
+            return new KryoSerializer();
         }
     }
 

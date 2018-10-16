@@ -18,6 +18,7 @@
 package com.hmily.tcc.core.spi.repository;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.hmily.tcc.common.bean.adapter.MongoAdapter;
 import com.hmily.tcc.common.bean.entity.Participant;
 import com.hmily.tcc.common.bean.entity.TccTransaction;
@@ -49,7 +50,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * mongo impl.
@@ -181,7 +181,7 @@ public class MongoCoordinatorRepository implements CoordinatorRepository {
             tccTransaction.setParticipants(participants);
             return tccTransaction;
         } catch (TccException e) {
-            LogUtil.error(LOGGER, "mongodb deSerialize exception:{}", e::getLocalizedMessage);
+            LOGGER.error("mongodb deSerialize exception:{}", e.getLocalizedMessage());
             return null;
         }
 
@@ -191,7 +191,11 @@ public class MongoCoordinatorRepository implements CoordinatorRepository {
     public List<TccTransaction> listAll() {
         final List<MongoAdapter> resultList = template.findAll(MongoAdapter.class, collectionName);
         if (CollectionUtils.isNotEmpty(resultList)) {
-            return resultList.stream().map(this::buildByCache).collect(Collectors.toList());
+            List<TccTransaction> result = Lists.newArrayList();
+            for(MongoAdapter adapter : resultList) {
+                result.add(this.buildByCache(adapter));
+            }
+            return result;
         }
         return Collections.emptyList();
     }
@@ -203,7 +207,11 @@ public class MongoCoordinatorRepository implements CoordinatorRepository {
         final List<MongoAdapter> mongoBeans =
                 template.find(query, MongoAdapter.class, collectionName);
         if (CollectionUtils.isNotEmpty(mongoBeans)) {
-            return mongoBeans.stream().map(this::buildByCache).collect(Collectors.toList());
+            List<TccTransaction> result = Lists.newArrayList();
+            for(MongoAdapter adapter : mongoBeans) {
+                result.add(this.buildByCache(adapter));
+            }
+            return result;
         }
         return Collections.emptyList();
     }
@@ -217,7 +225,7 @@ public class MongoCoordinatorRepository implements CoordinatorRepository {
             clientFactoryBean.afterPropertiesSet();
             template = new MongoTemplate(Objects.requireNonNull(clientFactoryBean.getObject()), tccMongoConfig.getMongoDbName());
         } catch (Exception e) {
-            LogUtil.error(LOGGER, "mongo init error please check you config:{}", e::getMessage);
+            LOGGER.error("mongo init error please check you config:{}", e.getMessage());
             throw new TccRuntimeException(e);
         }
     }

@@ -28,7 +28,6 @@ import com.hmily.tcc.core.coordinator.CoordinatorService;
 import com.hmily.tcc.core.helper.SpringBeanUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -41,7 +40,12 @@ public final class TccTransactionCacheManager {
 
     private static final LoadingCache<String, TccTransaction> LOADING_CACHE =
             CacheBuilder.newBuilder().maximumWeight(MAX_COUNT)
-                    .weigher((Weigher<String, TccTransaction>) (string, tccTransaction) -> getSize())
+                    .weigher(new Weigher<String, TccTransaction>() {
+                        @Override
+                        public int weigh(String s, TccTransaction tccTransaction) {
+                            return getSize();
+                        }
+                    })
                     .build(new CacheLoader<String, TccTransaction>() {
                         @Override
                         public TccTransaction load(final String key) {
@@ -71,7 +75,11 @@ public final class TccTransactionCacheManager {
     }
 
     private static TccTransaction cacheTccTransaction(final String key) {
-        return Optional.ofNullable(coordinatorService.findByTransId(key)).orElse(new TccTransaction());
+        TccTransaction transaction = coordinatorService.findByTransId(key);
+        if(transaction == null) {
+            transaction = new TccTransaction();
+        }
+        return transaction;
     }
 
     /**

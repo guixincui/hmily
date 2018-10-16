@@ -17,6 +17,7 @@
 
 package com.hmily.tcc.admin.service.compensate;
 
+import com.google.common.collect.Lists;
 import com.hmily.tcc.admin.helper.ConvertHelper;
 import com.hmily.tcc.admin.helper.PageHelper;
 import com.hmily.tcc.admin.page.CommonPager;
@@ -38,8 +39,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Mongodb impl.
@@ -60,7 +59,7 @@ public class MongoCompensationServiceImpl implements CompensationService {
         if (StringUtils.isNoneBlank(query.getTransId())) {
             baseQuery.addCriteria(new Criteria("transId").is(query.getTransId()));
         }
-        if (Objects.nonNull(query.getRetry())) {
+        if (null != query.getRetry()) {
             baseQuery.addCriteria(new Criteria("retriedCount").lt(query.getRetry()));
         }
         final long totalCount = mongoTemplate.count(baseQuery, mongoTableName);
@@ -74,11 +73,10 @@ public class MongoCompensationServiceImpl implements CompensationService {
         final List<MongoAdapter> mongoAdapters =
                 mongoTemplate.find(baseQuery, MongoAdapter.class, mongoTableName);
         if (CollectionUtils.isNotEmpty(mongoAdapters)) {
-            final List<TccCompensationVO> recoverVOS =
-                    mongoAdapters
-                            .stream()
-                            .map(ConvertHelper::buildVO)
-                            .collect(Collectors.toList());
+            final List<TccCompensationVO> recoverVOS = Lists.newArrayList();
+            for(MongoAdapter adapter : mongoAdapters) {
+                recoverVOS.add(ConvertHelper.buildVO(adapter));
+            }
             voCommonPager.setDataList(recoverVOS);
         }
         return voCommonPager;
@@ -90,17 +88,17 @@ public class MongoCompensationServiceImpl implements CompensationService {
             return Boolean.FALSE;
         }
         final String mongoTableName = RepositoryPathUtils.buildMongoTableName(applicationName);
-        ids.forEach(id -> {
+        for(String id : ids) {
             Query query = new Query();
             query.addCriteria(new Criteria("transId").is(id));
             mongoTemplate.remove(query, mongoTableName);
-        });
+        }
         return Boolean.TRUE;
     }
 
     @Override
     public Boolean updateRetry(final String id, final Integer retry, final String appName) {
-        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || Objects.isNull(retry)) {
+        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null != retry) {
             return Boolean.FALSE;
         }
         final String mongoTableName = RepositoryPathUtils.buildMongoTableName(appName);

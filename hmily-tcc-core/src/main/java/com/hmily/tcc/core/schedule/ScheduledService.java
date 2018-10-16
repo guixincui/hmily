@@ -28,7 +28,6 @@ import com.hmily.tcc.common.bean.entity.TccTransaction;
 import com.hmily.tcc.common.config.TccConfig;
 import com.hmily.tcc.common.enums.TccActionEnum;
 import com.hmily.tcc.common.enums.TccRoleEnum;
-import com.hmily.tcc.common.utils.LogUtil;
 import com.hmily.tcc.core.concurrent.threadlocal.TransactionContextLocal;
 import com.hmily.tcc.core.concurrent.threadpool.HmilyThreadFactory;
 import com.hmily.tcc.core.helper.SpringBeanUtils;
@@ -38,8 +37,6 @@ import org.apache.commons.lang3.reflect.MethodUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -76,52 +73,55 @@ public class ScheduledService {
      */
     public void scheduledRollBack() {
         scheduledExecutorService
-                .scheduleWithFixedDelay(() -> {
-                    LogUtil.debug(LOGGER, "rollback execute delayTime:{}", () -> tccConfig.getScheduledDelay());
-                    try {
-                        final List<TccTransaction> tccTransactions = coordinatorRepository.listAllByDelay(acquireData());
-                        if (CollectionUtils.isEmpty(tccTransactions)) {
-                            return;
-                        }
-                        for (TccTransaction tccTransaction : tccTransactions) {
-                            // if the try is not completed, no compensation will be provided (to prevent various exceptions in the try phase)
-                            if (tccTransaction.getRole() == TccRoleEnum.PROVIDER.getCode() && tccTransaction.getStatus() == TccActionEnum.PRE_TRY.getCode()) {
-                                continue;
+                .scheduleWithFixedDelay(new Runnable() {
+                    @Override
+                    public void run() {
+                        LOGGER.debug("rollback execute delayTime:{}", tccConfig.getScheduledDelay());
+                        try {
+                            final List<TccTransaction> tccTransactions = coordinatorRepository.listAllByDelay(acquireData());
+                            if (CollectionUtils.isEmpty(tccTransactions)) {
+                                return;
                             }
-                            if (tccTransaction.getRetriedCount() > tccConfig.getRetryMax()) {
-                                LogUtil.error(LOGGER, "This transaction exceeds the maximum number of retries and no retries will occur：{}", () -> tccTransaction);
-                                continue;
-                            }
-                            if (Objects.equals(tccTransaction.getPattern(), TccPatternEnum.CC.getCode())
-                                    && tccTransaction.getStatus() == TccActionEnum.TRYING.getCode()) {
-                                continue;
-                            }
-                            // if the transaction role is the provider, and the number of retries in the scope class cannot be executed, only by the initiator
-                            if (tccTransaction.getRole() == TccRoleEnum.PROVIDER.getCode()
-                                    && (tccTransaction.getCreateTime().getTime()
-                                    + tccConfig.getRecoverDelayTime() * tccConfig.getLoadFactor() * 1000 > System.currentTimeMillis())) {
-                                continue;
-                            }
-                            try {
-                                tccTransaction.setRetriedCount(tccTransaction.getRetriedCount() + 1);
-                                final int rows = coordinatorRepository.update(tccTransaction);
-                                // determine that rows>0 is executed to prevent concurrency when the business side is in cluster mode
-                                if (rows > 0) {
-                                    if (tccTransaction.getStatus() == TccActionEnum.TRYING.getCode()
-                                            || tccTransaction.getStatus() == TccActionEnum.PRE_TRY.getCode()
-                                            || tccTransaction.getStatus() == TccActionEnum.CANCELING.getCode()) {
-                                        cancel(tccTransaction);
-                                    } else if (tccTransaction.getStatus() == TccActionEnum.CONFIRMING.getCode()) {
-                                        confirm(tccTransaction);
-                                    }
+                            for (TccTransaction tccTransaction : tccTransactions) {
+                                // if the try is not completed, no compensation will be provided (to prevent various exceptions in the try phase)
+                                if (tccTransaction.getRole() == TccRoleEnum.PROVIDER.getCode() && tccTransaction.getStatus() == TccActionEnum.PRE_TRY.getCode()) {
+                                    continue;
                                 }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                LogUtil.error(LOGGER, "execute recover exception:{}", e::getMessage);
+                                if (tccTransaction.getRetriedCount() > tccConfig.getRetryMax()) {
+                                    LOGGER.error("This transaction exceeds the maximum number of retries and no retries will occur：{}", tccTransaction);
+                                    continue;
+                                }
+                                if (Objects.equals(tccTransaction.getPattern(), TccPatternEnum.CC.getCode())
+                                        && tccTransaction.getStatus() == TccActionEnum.TRYING.getCode()) {
+                                    continue;
+                                }
+                                // if the transaction role is the provider, and the number of retries in the scope class cannot be executed, only by the initiator
+                                if (tccTransaction.getRole() == TccRoleEnum.PROVIDER.getCode()
+                                        && (tccTransaction.getCreateTime().getTime()
+                                        + tccConfig.getRecoverDelayTime() * tccConfig.getLoadFactor() * 1000 > System.currentTimeMillis())) {
+                                    continue;
+                                }
+                                try {
+                                    tccTransaction.setRetriedCount(tccTransaction.getRetriedCount() + 1);
+                                    final int rows = coordinatorRepository.update(tccTransaction);
+                                    // determine that rows>0 is executed to prevent concurrency when the business side is in cluster mode
+                                    if (rows > 0) {
+                                        if (tccTransaction.getStatus() == TccActionEnum.TRYING.getCode()
+                                                || tccTransaction.getStatus() == TccActionEnum.PRE_TRY.getCode()
+                                                || tccTransaction.getStatus() == TccActionEnum.CANCELING.getCode()) {
+                                            cancel(tccTransaction);
+                                        } else if (tccTransaction.getStatus() == TccActionEnum.CONFIRMING.getCode()) {
+                                            confirm(tccTransaction);
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    LOGGER.error("execute recover exception:{}", e.getMessage());
+                                }
                             }
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
                 }, 30, tccConfig.getScheduledDelay(), TimeUnit.SECONDS);
 
@@ -141,7 +141,7 @@ public class ScheduledService {
                     TransactionContextLocal.getInstance().set(context);
                     executeCoordinator(participant.getCancelTccInvocation());
                 } catch (Exception e) {
-                    LogUtil.error(LOGGER, "execute cancel exception:{}", () -> e);
+                    LOGGER.error("execute cancel exception:{}", e);
                     success = false;
                     failList.add(participant);
                 } finally {
@@ -167,7 +167,7 @@ public class ScheduledService {
                     TransactionContextLocal.getInstance().set(context);
                     executeCoordinator(participant.getConfirmTccInvocation());
                 } catch (Exception e) {
-                    LogUtil.error(LOGGER, "execute confirm exception:{}", () -> e);
+                    LOGGER.error("execute confirm exception:{}", e);
                     success = false;
                     failList.add(participant);
                 } finally {
@@ -189,20 +189,19 @@ public class ScheduledService {
 
     @SuppressWarnings("unchecked")
     private void executeCoordinator(final TccInvocation tccInvocation) throws Exception {
-        if (Objects.nonNull(tccInvocation)) {
+        if (tccInvocation != null) {
             final Class clazz = tccInvocation.getTargetClass();
             final String method = tccInvocation.getMethodName();
             final Object[] args = tccInvocation.getArgs();
             final Class[] parameterTypes = tccInvocation.getParameterTypes();
             final Object bean = SpringBeanUtils.getInstance().getBean(clazz);
             MethodUtils.invokeMethod(bean, method, args, parameterTypes);
-            LogUtil.debug(LOGGER, "Scheduled tasks execute transaction compensation:{}", () -> tccInvocation.getTargetClass() + ":" + tccInvocation.getMethodName());
+            LOGGER.debug("Scheduled tasks execute transaction compensation:{}", tccInvocation.getTargetClass() + ":" + tccInvocation.getMethodName());
         }
     }
 
     private Date acquireData() {
-        return new Date(LocalDateTime.now().atZone(ZoneId.systemDefault())
-                .toInstant().toEpochMilli() - (tccConfig.getRecoverDelayTime() * 1000));
+        return new Date(System.currentTimeMillis() - (tccConfig.getRecoverDelayTime() * 1000));
     }
 
 }

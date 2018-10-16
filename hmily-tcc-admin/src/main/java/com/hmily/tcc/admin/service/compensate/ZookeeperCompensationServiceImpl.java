@@ -40,7 +40,6 @@ import org.apache.zookeeper.data.Stat;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * zookeeper impl.
@@ -70,12 +69,17 @@ public class ZookeeperCompensationServiceImpl implements CompensationService {
             if (StringUtils.isBlank(query.getTransId()) && Objects.nonNull(query.getRetry())) {
                 zNodePaths = zooKeeper.getChildren(rootPath, false);
                 final List<TccCompensationVO> all = findAll(zNodePaths, rootPath);
-                final List<TccCompensationVO> collect =
-                        all.stream()
-                                .filter(vo -> vo.getRetriedCount() < query.getRetry())
-                                .collect(Collectors.toList());
+                final List<TccCompensationVO> collect = Lists.newArrayList();
+                for(TccCompensationVO vo : all) {
+                    if(vo != null && vo.getRetriedCount() < query.getRetry()) {
+                        collect.add(vo);
+                    }
+                }
                 totalCount = collect.size();
-                voList = collect.stream().skip(start).limit(pageSize).collect(Collectors.toList());
+                voList = Lists.newArrayList();
+                for (int i = start; i < totalCount && i < start + pageSize; i++) {
+                    voList.add(collect.get(i));
+                }
             } else if (StringUtils.isNoneBlank(query.getTransId()) && Objects.isNull(query.getRetry())) {
                 zNodePaths = Lists.newArrayList(query.getTransId());
                 totalCount = zNodePaths.size();
@@ -83,10 +87,12 @@ public class ZookeeperCompensationServiceImpl implements CompensationService {
             } else if (StringUtils.isNoneBlank(query.getTransId()) && Objects.nonNull(query.getRetry())) {
                 zNodePaths = Lists.newArrayList(query.getTransId());
                 totalCount = zNodePaths.size();
-                voList = findAll(zNodePaths, rootPath)
-                        .stream()
-                        .filter(vo -> vo.getRetriedCount() < query.getRetry())
-                        .collect(Collectors.toList());
+                voList = Lists.newArrayList();
+                for (TccCompensationVO vo : findAll(zNodePaths, rootPath)) {
+                    if (vo != null && vo.getRetriedCount() < query.getRetry()) {
+                        voList.add(vo);
+                    }
+                }
             } else {
                 zNodePaths = zooKeeper.getChildren(rootPath, false);
                 totalCount = zNodePaths.size();
@@ -106,7 +112,7 @@ public class ZookeeperCompensationServiceImpl implements CompensationService {
             return Boolean.FALSE;
         }
         final String rootPathPrefix = RepositoryPathUtils.buildZookeeperPathPrefix(appName);
-        ids.stream().map(id -> {
+        for(String id : ids) {
             try {
                 final String path = RepositoryPathUtils.buildZookeeperRootPath(rootPathPrefix, id);
                 byte[] content = zooKeeper.getData(path,
@@ -114,12 +120,10 @@ public class ZookeeperCompensationServiceImpl implements CompensationService {
                 final CoordinatorRepositoryAdapter adapter =
                         objectSerializer.deSerialize(content, CoordinatorRepositoryAdapter.class);
                 zooKeeper.delete(path, adapter.getVersion());
-                return 1;
             } catch (Exception e) {
                 e.printStackTrace();
-                return -1;
             }
-        }).count();
+        }
         return Boolean.TRUE;
     }
 
@@ -148,20 +152,24 @@ public class ZookeeperCompensationServiceImpl implements CompensationService {
     }
 
     private List<TccCompensationVO> findAll(final List<String> zNodePaths, final String rootPath) {
-        return zNodePaths.stream()
-                .filter(StringUtils::isNoneBlank)
-                .map(zNodePath -> buildByNodePath(rootPath, zNodePath))
-                .collect(Collectors.toList());
+        List<TccCompensationVO> result = Lists.newArrayList();
+        for(String zNodePath : zNodePaths) {
+            if(StringUtils.isNoneBlank(zNodePath)) {
+                result.add(buildByNodePath(rootPath, zNodePath));
+            }
+        }
+        return result;
     }
 
     private List<TccCompensationVO> findByPage(final List<String> zNodePaths, final String rootPath,
                                                final int start, final int pageSize) {
-        return zNodePaths.stream()
-                .skip(start)
-                .limit(pageSize)
-                .filter(StringUtils::isNoneBlank)
-                .map(zNodePath -> buildByNodePath(rootPath, zNodePath))
-                .collect(Collectors.toList());
+        List<TccCompensationVO> result = Lists.newArrayList();
+        for(int i = start;i<start + pageSize && i<zNodePaths.size();i++) {
+            if(StringUtils.isNoneBlank(zNodePaths.get(i))) {
+                result.add(buildByNodePath(rootPath, zNodePaths.get(i)));
+            }
+        }
+        return result;
     }
 
     private TccCompensationVO buildByNodePath(final String rootPath, final String zNodePath) {

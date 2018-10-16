@@ -63,9 +63,13 @@ public enum TccActionEnum {
      * @return the tcc action enum
      */
     public static TccActionEnum acquireByCode(final int code) {
-        return Arrays.stream(TccActionEnum.values())
-                        .filter(v -> Objects.equals(v.getCode(), code))
-                        .findFirst().orElse(TccActionEnum.TRYING);
+        TccActionEnum[] values = TccActionEnum.values();
+        for(TccActionEnum val : values) {
+            if(Objects.equals(val.getCode(), code)) {
+                return val;
+            }
+        }
+        return TccActionEnum.TRYING;
     }
 
 }

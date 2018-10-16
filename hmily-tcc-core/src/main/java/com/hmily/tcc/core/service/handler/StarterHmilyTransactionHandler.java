@@ -45,7 +45,7 @@ public class StarterHmilyTransactionHandler implements HmilyTransactionHandler {
     private final HmilyTransactionExecutor hmilyTransactionExecutor;
 
     private final Executor executor = new ThreadPoolExecutor(MAX_THREAD, MAX_THREAD, 0, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>(),
+            new LinkedBlockingQueue<Runnable>(),
             HmilyThreadFactory.create("hmily-execute", false),
             new ThreadPoolExecutor.AbortPolicy());
 
@@ -68,13 +68,22 @@ public class StarterHmilyTransactionHandler implements HmilyTransactionHandler {
             } catch (Throwable throwable) {
                 //if exception ,execute cancel
                 final TccTransaction currentTransaction = hmilyTransactionExecutor.getCurrentTransaction();
-                executor.execute(() -> hmilyTransactionExecutor
-                        .cancel(currentTransaction));
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        hmilyTransactionExecutor.cancel(currentTransaction);
+                    }
+                });
                 throw throwable;
             }
             //execute confirm
             final TccTransaction currentTransaction = hmilyTransactionExecutor.getCurrentTransaction();
-            executor.execute(() -> hmilyTransactionExecutor.confirm(currentTransaction));
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    hmilyTransactionExecutor.confirm(currentTransaction);
+                }
+            });
         } finally {
             hmilyTransactionExecutor.remove();
         }

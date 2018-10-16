@@ -17,6 +17,7 @@
 
 package com.hmily.tcc.admin.service.compensate;
 
+import com.google.common.collect.Lists;
 import com.hmily.tcc.admin.helper.ConvertHelper;
 import com.hmily.tcc.admin.helper.PageHelper;
 import com.hmily.tcc.admin.page.CommonPager;
@@ -35,10 +36,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * file impl.
@@ -72,12 +71,17 @@ public class FileCompensationServiceImpl implements CompensationService {
             files = path.listFiles();
             final List<TccCompensationVO> all = findAll(files);
             if (CollectionUtils.isNotEmpty(all)) {
-                final List<TccCompensationVO> collect =
-                        all.stream().filter(Objects::nonNull)
-                                .filter(vo -> vo.getRetriedCount() < query.getRetry())
-                                .collect(Collectors.toList());
+                final List<TccCompensationVO> collect = Lists.newArrayList();
+                for (TccCompensationVO vo : all) {
+                    if (vo != null && vo.getRetriedCount() < query.getRetry()) {
+                        collect.add(vo);
+                    }
+                }
                 totalCount = collect.size();
-                voList = collect.stream().skip(start).limit(pageSize).collect(Collectors.toList());
+                voList = Lists.newArrayList();
+                for (int i = start; i < start + pageSize && i < totalCount; i++) {
+                    voList.add(collect.get(i));
+                }
             } else {
                 totalCount = 0;
                 voList = null;
@@ -93,10 +97,12 @@ public class FileCompensationServiceImpl implements CompensationService {
             final File file = new File(fullFileName);
             files = new File[]{file};
             totalCount = files.length;
-            voList = findAll(files)
-                    .stream().filter(Objects::nonNull)
-                    .filter(vo -> vo.getRetriedCount() < query.getRetry())
-                    .collect(Collectors.toList());
+            voList = Lists.newArrayList();
+            for (TccCompensationVO vo : findAll(files)) {
+                if (vo != null && vo.getRetriedCount() < query.getRetry()) {
+                    voList.add(vo);
+                }
+            }
         } else {
             path = new File(filePath);
             files = path.listFiles();
@@ -114,9 +120,9 @@ public class FileCompensationServiceImpl implements CompensationService {
             return Boolean.FALSE;
         }
         final String filePath = RepositoryPathUtils.buildFilePath(applicationName);
-        ids.stream().map(id ->
-                new File(RepositoryPathUtils.getFullFileName(filePath, id)))
-                .forEach(File::delete);
+        for (String id : ids) {
+            new File(RepositoryPathUtils.getFullFileName(filePath, id)).delete();
+        }
         return Boolean.TRUE;
     }
 
@@ -179,18 +185,20 @@ public class FileCompensationServiceImpl implements CompensationService {
 
     private List<TccCompensationVO> findAll(final File[] files) {
         if (files != null && files.length > 0) {
-            return Arrays.stream(files)
-                    .map(this::readTransaction)
-                    .collect(Collectors.toList());
+            List<TccCompensationVO> voList = Lists.newArrayList();
+            for(File file : files) {
+                voList.add(readTransaction(file));
+            }
         }
         return null;
     }
 
     private List<TccCompensationVO> findByPage(final File[] files, final int start, final int pageSize) {
         if (files != null && files.length > 0) {
-            return Arrays.stream(files).skip(start).limit(pageSize)
-                    .map(this::readTransaction)
-                    .collect(Collectors.toList());
+            List<TccCompensationVO> voList = Lists.newArrayList();
+            for (int i = start; i < files.length && i < start + pageSize; i++) {
+                voList.add(readTransaction(files[i]));
+            }
         }
         return null;
     }

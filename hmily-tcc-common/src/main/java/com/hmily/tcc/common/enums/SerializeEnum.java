@@ -61,11 +61,13 @@ public enum SerializeEnum {
      * @return the serialize protocol enum
      */
     public static SerializeEnum acquire(final String serialize) {
-        Optional<SerializeEnum> serializeEnum =
-                Arrays.stream(SerializeEnum.values())
-                        .filter(v -> Objects.equals(v.getSerialize(), serialize))
-                        .findFirst();
-        return serializeEnum.orElse(SerializeEnum.KRYO);
+        SerializeEnum[] values = SerializeEnum.values();
+        for(SerializeEnum val : values) {
+            if(Objects.equals(val.getSerialize(), serialize)) {
+                return val;
+            }
+        }
+        return SerializeEnum.KRYO;
     }
 
 }

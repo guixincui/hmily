@@ -20,9 +20,7 @@ package com.hmily.tcc.common.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * The enum Rejected policy type enum.
@@ -62,11 +60,13 @@ public enum RejectedPolicyTypeEnum {
      * @return the rejected policy type enum
      */
     public static RejectedPolicyTypeEnum fromString(final String value) {
-        Optional<RejectedPolicyTypeEnum> rejectedPolicyTypeEnum =
-                Arrays.stream(RejectedPolicyTypeEnum.values())
-                        .filter(v -> Objects.equals(v.getValue(), value))
-                        .findFirst();
-        return rejectedPolicyTypeEnum.orElse(RejectedPolicyTypeEnum.ABORT_POLICY);
+        RejectedPolicyTypeEnum[] values = RejectedPolicyTypeEnum.values();
+        for(RejectedPolicyTypeEnum val : values) {
+            if(Objects.equals(val.getValue(), value)) {
+                return val;
+            }
+        }
+        return RejectedPolicyTypeEnum.ABORT_POLICY;
     }
 }
 

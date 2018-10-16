@@ -67,7 +67,7 @@ public class SpringCloudHmilyTransactionInterceptor implements TccTransactionInt
         try {
             requestAttributes = RequestContextHolder.currentRequestAttributes();
         } catch (Throwable ex) {
-            LogUtil.warn(LOGGER, () -> "can not acquire request info:" + ex.getLocalizedMessage());
+            LOGGER.warn("can not acquire request info:" + ex.getLocalizedMessage());
         }
 
         HttpServletRequest request = requestAttributes == null ? null : ((ServletRequestAttributes) requestAttributes).getRequest();
@@ -76,7 +76,7 @@ public class SpringCloudHmilyTransactionInterceptor implements TccTransactionInt
             tccTransactionContext = GsonUtils.getInstance().fromJson(context, TccTransactionContext.class);
         } else {
             tccTransactionContext = TransactionContextLocal.getInstance().get();
-            if (Objects.nonNull(tccTransactionContext)) {
+            if (tccTransactionContext != null) {
                 tccTransactionContext.setRole(TccRoleEnum.SPRING_CLOUD.getCode());
             }
         }

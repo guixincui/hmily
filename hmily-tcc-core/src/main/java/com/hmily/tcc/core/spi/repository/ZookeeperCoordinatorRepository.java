@@ -26,25 +26,19 @@ import com.hmily.tcc.common.enums.RepositorySupportEnum;
 import com.hmily.tcc.common.exception.TccException;
 import com.hmily.tcc.common.exception.TccRuntimeException;
 import com.hmily.tcc.common.serializer.ObjectSerializer;
-import com.hmily.tcc.common.utils.LogUtil;
 import com.hmily.tcc.common.utils.RepositoryConvertUtils;
 import com.hmily.tcc.common.utils.RepositoryPathUtils;
 import com.hmily.tcc.core.spi.CoordinatorRepository;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
 
 /**
  * zookeeper impl.
@@ -156,17 +150,14 @@ public class ZookeeperCoordinatorRepository implements CoordinatorRepository {
             throw new TccRuntimeException(e);
         }
         if (CollectionUtils.isNotEmpty(zNodePaths)) {
-            transactionRecovers = zNodePaths.stream()
-                    .filter(StringUtils::isNoneBlank)
-                    .map(zNodePath -> {
-                        try {
-                            byte[] content = zooKeeper.getData(buildRootPath(zNodePath), false, new Stat());
-                            return RepositoryConvertUtils.transformBean(content, objectSerializer);
-                        } catch (KeeperException | InterruptedException | TccException e) {
-                            e.printStackTrace();
-                        }
-                        return null;
-                    }).collect(Collectors.toList());
+            for(String zNodePath : zNodePaths) {
+                try {
+                    byte[] content = zooKeeper.getData(buildRootPath(zNodePath), false, new Stat());
+                    transactionRecovers.add(RepositoryConvertUtils.transformBean(content, objectSerializer));
+                } catch (KeeperException | InterruptedException | TccException e) {
+                    e.printStackTrace();
+                }
+            }
         }
         return transactionRecovers;
     }
@@ -174,9 +165,13 @@ public class ZookeeperCoordinatorRepository implements CoordinatorRepository {
     @Override
     public List<TccTransaction> listAllByDelay(final Date date) {
         final List<TccTransaction> tccTransactions = listAll();
-        return tccTransactions.stream()
-                .filter(tccTransaction -> tccTransaction.getLastTime().compareTo(date) > 0)
-                .collect(Collectors.toList());
+        List<TccTransaction> result = new ArrayList<>();
+        for(TccTransaction transaction : tccTransactions) {
+            if(transaction.getLastTime().compareTo(date) > 0) {
+                result.add(transaction);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -185,16 +180,19 @@ public class ZookeeperCoordinatorRepository implements CoordinatorRepository {
         try {
             connect(tccConfig.getTccZookeeperConfig());
         } catch (Exception e) {
-            LogUtil.error(LOGGER, "zookeeper init error please check you config:{}", e::getMessage);
+            LOGGER.error("zookeeper init error please check you config:{}", e.getMessage());
             throw new TccRuntimeException(e.getMessage());
         }
     }
 
     private void connect(final TccZookeeperConfig config) {
         try {
-            zooKeeper = new ZooKeeper(config.getHost(), config.getSessionTimeOut(), watchedEvent -> {
-                if (watchedEvent.getState() == Watcher.Event.KeeperState.SyncConnected) {
-                    LATCH.countDown();
+            zooKeeper = new ZooKeeper(config.getHost(), config.getSessionTimeOut(), new Watcher() {
+                @Override
+                public void process(WatchedEvent watchedEvent) {
+                    if (watchedEvent.getState() == Watcher.Event.KeeperState.SyncConnected) {
+                        LATCH.countDown();
+                    }
                 }
             });
             LATCH.await();

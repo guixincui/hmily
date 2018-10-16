@@ -17,6 +17,7 @@
 
 package com.hmily.tcc.admin.service.compensate;
 
+import com.google.common.collect.Lists;
 import com.hmily.tcc.admin.helper.PageHelper;
 import com.hmily.tcc.admin.page.CommonPager;
 import com.hmily.tcc.admin.page.PageParameter;
@@ -35,8 +36,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * jdbc impl.
@@ -62,18 +61,22 @@ public class JdbcCompensationServiceImpl implements CompensationService {
         if (StringUtils.isNoneBlank(query.getTransId())) {
             sqlBuilder.append(" and trans_id = ").append(query.getTransId());
         }
-        if (Objects.nonNull(query.getRetry())) {
+        if (null != query.getRetry()) {
             sqlBuilder.append(" and retried_count < ").append(query.getRetry());
         }
         final String sql = buildPageSql(sqlBuilder.toString(), pageParameter);
         CommonPager<TccCompensationVO> pager = new CommonPager<>();
         final List<Map<String, Object>> mapList = jdbcTemplate.queryForList(sql);
         if (CollectionUtils.isNotEmpty(mapList)) {
-            pager.setDataList(mapList.stream().map(this::buildByMap).collect(Collectors.toList()));
+            List<TccCompensationVO> result = Lists.newArrayList();
+            for(Map<String, Object> item : mapList) {
+                result.add(buildByMap(item));
+            }
+            pager.setDataList(result);
         }
         final Integer totalCount =
                 jdbcTemplate.queryForObject(String.format("select count(1) from %s", tableName), Integer.class);
-        if (Objects.nonNull(totalCount)) {
+        if (null != totalCount) {
             pager.setPage(PageHelper.buildPage(pageParameter, totalCount));
         }
         return pager;
@@ -85,15 +88,15 @@ public class JdbcCompensationServiceImpl implements CompensationService {
             return Boolean.FALSE;
         }
         final String tableName = RepositoryPathUtils.buildDbTableName(applicationName);
-        ids.stream()
-                .map(id -> buildDelSql(tableName, id))
-                .forEach(jdbcTemplate::execute);
+        for(String id : ids) {
+            jdbcTemplate.execute(buildDelSql(tableName, id));
+        }
         return Boolean.TRUE;
     }
 
     @Override
     public Boolean updateRetry(final String id, final Integer retry, final String appName) {
-        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || Objects.isNull(retry)) {
+        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null != retry) {
             return false;
         }
         final String tableName = RepositoryPathUtils.buildDbTableName(appName);
