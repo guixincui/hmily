@@ -141,8 +141,7 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
         if (CollectionUtils.isNotEmpty(list)) {
             return list.stream()
                     .filter(Objects::nonNull)
-                    .map(this::buildByResultMap)
-                    .collect(Collectors.toList()).get(0);
+                    .findFirst().map(this::buildByResultMap).get();
         }
         return null;
     }
