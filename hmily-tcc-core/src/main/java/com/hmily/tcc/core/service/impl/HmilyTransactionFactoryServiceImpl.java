@@ -44,7 +44,7 @@ public class HmilyTransactionFactoryServiceImpl implements HmilyTransactionFacto
      */
     @Override
     public Class factoryOf(final TccTransactionContext context) {
-        if (Objects.isNull(context)) {
+        if (null == context) {
             return StarterHmilyTransactionHandler.class;
         } else {
             //why this code?  because spring cloud invoke has proxy.

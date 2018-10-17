@@ -77,10 +77,10 @@ public class DubboHmilyTransactionFilter implements Filter {
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
-        if (Objects.nonNull(tcc)) {
+        if (null != tcc) {
             try {
                 final TccTransactionContext tccTransactionContext = TransactionContextLocal.getInstance().get();
-                if (Objects.nonNull(tccTransactionContext)) {
+                if (null != tccTransactionContext) {
                     if (tccTransactionContext.getRole() == TccRoleEnum.LOCAL.getCode()) {
                         tccTransactionContext.setRole(TccRoleEnum.INLINE.getCode());
                     }
@@ -116,7 +116,7 @@ public class DubboHmilyTransactionFilter implements Filter {
                                          final Method method, final Class clazz,
                                          final Object[] arguments, final Class... args) throws TccRuntimeException {
 
-        if (Objects.isNull(tccTransactionContext)
+        if (null == tccTransactionContext
                 || (TccActionEnum.TRYING.getCode() != tccTransactionContext.getAction())) {
             return null;
         }
