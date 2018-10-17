@@ -98,7 +98,7 @@ public class MongoCompensationServiceImpl implements CompensationService {
 
     @Override
     public Boolean updateRetry(final String id, final Integer retry, final String appName) {
-        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null != retry) {
+        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null == retry) {
             return Boolean.FALSE;
         }
         final String mongoTableName = RepositoryPathUtils.buildMongoTableName(appName);

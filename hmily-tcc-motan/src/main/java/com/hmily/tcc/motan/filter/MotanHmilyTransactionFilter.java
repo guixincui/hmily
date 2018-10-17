@@ -115,7 +115,7 @@ public class MotanHmilyTransactionFilter implements Filter {
     private Participant buildParticipant(final TccTransactionContext tccTransactionContext,
                                          final Tcc tcc, final Method method, final Class clazz,
                                          final Object[] arguments, final Class... args) throws TccRuntimeException {
-        if (null != tccTransactionContext
+        if (null == tccTransactionContext
                 || (TccActionEnum.TRYING.getCode() != tccTransactionContext.getAction())) {
             return null;
         }

@@ -78,7 +78,7 @@ public class RedisCompensationServiceImpl implements CompensationService {
             for (int i = start; i < collect.size() && i < start + pageSize; i++) {
                 voList.add(collect.get(i));
             }
-        } else if (StringUtils.isNoneBlank(query.getTransId()) && null != query.getRetry()) {
+        } else if (StringUtils.isNoneBlank(query.getTransId()) && null == query.getRetry()) {
             keys = Sets.newHashSet(Joiner.on(":").join(redisKeyPrefix, query.getTransId()).getBytes());
             totalCount = keys.size();
             voList = findAll(keys);
@@ -135,7 +135,7 @@ public class RedisCompensationServiceImpl implements CompensationService {
 
     @Override
     public Boolean updateRetry(final String id, final Integer retry, final String appName) {
-        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null != retry) {
+        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null == retry) {
             return Boolean.FALSE;
         }
         String keyPrefix = RepositoryPathUtils.buildRedisKeyPrefix(appName);
@@ -168,11 +168,11 @@ public class RedisCompensationServiceImpl implements CompensationService {
     private List<TccCompensationVO> findByPage(final Set<byte[]> keys, final int start, final int pageSize) {
         List<TccCompensationVO> list = Lists.newArrayList();
         int index = 0;
-        for (Iterator<byte[]> it = keys.iterator(); it.hasNext(); ) {
+        for (Iterator<byte[]> it = keys.iterator(); it.hasNext(); index++) {
             if (index < start) {
                 continue;
             }
-            if (index > start + pageSize || index > keys.size()) {
+            if (index >= start + pageSize || index >= keys.size()) {
                 break;
             }
             TccCompensationVO vo = buildVOByKey(it.next());
