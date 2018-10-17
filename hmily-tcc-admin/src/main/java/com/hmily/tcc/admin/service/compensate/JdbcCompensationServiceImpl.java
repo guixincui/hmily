@@ -96,7 +96,7 @@ public class JdbcCompensationServiceImpl implements CompensationService {
 
     @Override
     public Boolean updateRetry(final String id, final Integer retry, final String appName) {
-        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null != retry) {
+        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null == retry) {
             return false;
         }
         final String tableName = RepositoryPathUtils.buildDbTableName(appName);
