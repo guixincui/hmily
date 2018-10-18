@@ -23,7 +23,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
  * TccTransactionInterceptor.
  * @author xiaoyu
  */
-@FunctionalInterface
+
 public interface TccTransactionInterceptor {
 
 

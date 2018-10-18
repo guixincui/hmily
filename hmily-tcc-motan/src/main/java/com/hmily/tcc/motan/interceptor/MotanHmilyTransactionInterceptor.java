@@ -52,7 +52,7 @@ public class MotanHmilyTransactionInterceptor implements TccTransactionIntercept
     public Object interceptor(final ProceedingJoinPoint pjp) throws Throwable {
         TccTransactionContext tccTransactionContext = null;
         final Request request = RpcContext.getContext().getRequest();
-        if (Objects.nonNull(request)) {
+        if (null != (request)) {
             final Map<String, String> attachments = request.getAttachments();
             if (attachments != null && !attachments.isEmpty()) {
                 String context = attachments.get(CommonConstant.TCC_TRANSACTION_CONTEXT);

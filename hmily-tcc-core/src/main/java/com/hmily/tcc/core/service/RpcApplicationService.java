@@ -21,7 +21,7 @@ package com.hmily.tcc.core.service;
  * RpcApplicationService.
  * @author xiaoyu
  */
-@FunctionalInterface
+
 public interface RpcApplicationService {
 
     /**

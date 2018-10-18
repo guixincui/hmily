@@ -18,7 +18,6 @@
 package com.hmily.tcc.admin.service.login;
 
 import com.hmily.tcc.admin.service.LoginService;
-import com.hmily.tcc.common.utils.LogUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

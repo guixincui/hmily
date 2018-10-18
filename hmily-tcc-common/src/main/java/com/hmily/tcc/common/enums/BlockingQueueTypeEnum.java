@@ -17,9 +17,7 @@
 
 package com.hmily.tcc.common.enums;
 
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * The enum Blocking queue type enum.

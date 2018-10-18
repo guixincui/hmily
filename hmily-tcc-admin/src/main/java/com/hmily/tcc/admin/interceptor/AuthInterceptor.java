@@ -41,7 +41,7 @@ public class AuthInterceptor extends HandlerInterceptorAdapter {
             HandlerMethod handlerMethod = (HandlerMethod) handler;
             Method method = handlerMethod.getMethod();
             final Permission annotation = method.getAnnotation(Permission.class);
-            if (Objects.isNull(annotation)) {
+            if (null == annotation) {
                 return Boolean.TRUE;
             }
             final boolean login = annotation.isLogin();

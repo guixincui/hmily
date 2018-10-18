@@ -22,8 +22,6 @@ import com.hmily.tcc.core.service.RpcApplicationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 /**
  * DubboRpcApplicationServiceImpl.
  * @author xiaoyu
@@ -43,6 +41,6 @@ public class DubboRpcApplicationServiceImpl implements RpcApplicationService {
 
     @Override
     public String acquireName() {
-        return Optional.ofNullable(applicationConfig).orElse(new ApplicationConfig("hmily-dubbo")).getName();
+        return (applicationConfig != null ? applicationConfig : new ApplicationConfig("hmily-dubbo")).getName();
     }
 }

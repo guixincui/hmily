@@ -23,7 +23,6 @@ import com.hmily.tcc.common.bean.context.TccTransactionContext;
  * this is hmily handler factory.
  * @author xiaoyu
  */
-@FunctionalInterface
 public interface HmilyTransactionFactoryService<T> {
 
     /**

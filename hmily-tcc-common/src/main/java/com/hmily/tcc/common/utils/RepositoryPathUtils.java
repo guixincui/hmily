@@ -17,6 +17,7 @@
 
 package com.hmily.tcc.common.utils;
 
+import com.google.common.base.Joiner;
 import com.hmily.tcc.common.constant.CommonConstant;
 
 /**
@@ -26,11 +27,11 @@ import com.hmily.tcc.common.constant.CommonConstant;
 public class RepositoryPathUtils {
 
     public static String buildRedisKey(final String keyPrefix, final String id) {
-        return String.join(":", keyPrefix, id);
+        return Joiner.on(":").join(keyPrefix, id);
     }
 
     public static String buildFilePath(final String applicationName) {
-        return String.join("/", CommonConstant.PATH_SUFFIX, applicationName.replaceAll("-", "_"));
+        return Joiner.on("/").join(CommonConstant.PATH_SUFFIX, applicationName.replaceAll("-", "_"));
     }
 
     public static String getFullFileName(final String filePath, final String id) {
@@ -50,11 +51,11 @@ public class RepositoryPathUtils {
     }
 
     public static String buildZookeeperPathPrefix(final String applicationName) {
-        return String.join("-", CommonConstant.PATH_SUFFIX, applicationName);
+        return Joiner.on("-").join(CommonConstant.PATH_SUFFIX, applicationName);
     }
 
     public static String buildZookeeperRootPath(final String prefix, final String id) {
-        return String.join("/", prefix, id);
+        return Joiner.on("/").join(prefix, id);
     }
 
 }

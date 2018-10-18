@@ -66,7 +66,7 @@ public class ZookeeperCompensationServiceImpl implements CompensationService {
         int totalCount;
         try {
             //如果只查 重试条件的
-            if (StringUtils.isBlank(query.getTransId()) && Objects.nonNull(query.getRetry())) {
+            if (StringUtils.isBlank(query.getTransId()) && null != (query.getRetry())) {
                 zNodePaths = zooKeeper.getChildren(rootPath, false);
                 final List<TccCompensationVO> all = findAll(zNodePaths, rootPath);
                 final List<TccCompensationVO> collect = Lists.newArrayList();
@@ -80,11 +80,11 @@ public class ZookeeperCompensationServiceImpl implements CompensationService {
                 for (int i = start; i < totalCount && i < start + pageSize; i++) {
                     voList.add(collect.get(i));
                 }
-            } else if (StringUtils.isNoneBlank(query.getTransId()) && Objects.isNull(query.getRetry())) {
+            } else if (StringUtils.isNoneBlank(query.getTransId()) && null == (query.getRetry())) {
                 zNodePaths = Lists.newArrayList(query.getTransId());
                 totalCount = zNodePaths.size();
                 voList = findAll(zNodePaths, rootPath);
-            } else if (StringUtils.isNoneBlank(query.getTransId()) && Objects.nonNull(query.getRetry())) {
+            } else if (StringUtils.isNoneBlank(query.getTransId()) && null != (query.getRetry())) {
                 zNodePaths = Lists.newArrayList(query.getTransId());
                 totalCount = zNodePaths.size();
                 voList = Lists.newArrayList();
@@ -129,7 +129,7 @@ public class ZookeeperCompensationServiceImpl implements CompensationService {
 
     @Override
     public Boolean updateRetry(final String id, final Integer retry, final String appName) {
-        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || Objects.isNull(retry)) {
+        if (StringUtils.isBlank(id) || StringUtils.isBlank(appName) || null == (retry)) {
             return Boolean.FALSE;
         }
         final String rootPathPrefix = RepositoryPathUtils.buildZookeeperPathPrefix(appName);

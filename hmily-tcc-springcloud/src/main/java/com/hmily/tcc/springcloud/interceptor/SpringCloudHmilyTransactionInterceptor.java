@@ -21,7 +21,6 @@ import com.hmily.tcc.common.bean.context.TccTransactionContext;
 import com.hmily.tcc.common.constant.CommonConstant;
 import com.hmily.tcc.common.enums.TccRoleEnum;
 import com.hmily.tcc.common.utils.GsonUtils;
-import com.hmily.tcc.common.utils.LogUtil;
 import com.hmily.tcc.core.concurrent.threadlocal.TransactionContextLocal;
 import com.hmily.tcc.core.interceptor.TccTransactionInterceptor;
 import com.hmily.tcc.core.service.HmilyTransactionAspectService;

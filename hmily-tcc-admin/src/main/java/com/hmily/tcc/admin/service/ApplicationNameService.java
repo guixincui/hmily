@@ -23,7 +23,7 @@ import java.util.List;
  * ApplicationNameService.
  * @author xiaoyu(Myth)
  */
-@FunctionalInterface
+
 public interface ApplicationNameService {
 
     /**

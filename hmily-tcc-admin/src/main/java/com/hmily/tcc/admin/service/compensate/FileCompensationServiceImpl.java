@@ -66,7 +66,7 @@ public class FileCompensationServiceImpl implements CompensationService {
         int totalCount;
         List<TccCompensationVO> voList;
         //如果只查 重试条件的
-        if (StringUtils.isBlank(query.getTransId()) && Objects.nonNull(query.getRetry())) {
+        if (StringUtils.isBlank(query.getTransId()) && null != (query.getRetry())) {
             path = new File(filePath);
             files = path.listFiles();
             final List<TccCompensationVO> all = findAll(files);
@@ -86,13 +86,13 @@ public class FileCompensationServiceImpl implements CompensationService {
                 totalCount = 0;
                 voList = null;
             }
-        } else if (StringUtils.isNoneBlank(query.getTransId()) && Objects.isNull(query.getRetry())) {
+        } else if (StringUtils.isNoneBlank(query.getTransId()) && null == (query.getRetry())) {
             final String fullFileName = RepositoryPathUtils.getFullFileName(filePath, query.getTransId());
             final File file = new File(fullFileName);
             files = new File[]{file};
             totalCount = files.length;
             voList = findAll(files);
-        } else if (StringUtils.isNoneBlank(query.getTransId()) && Objects.nonNull(query.getRetry())) {
+        } else if (StringUtils.isNoneBlank(query.getTransId()) && null != (query.getRetry())) {
             final String fullFileName = RepositoryPathUtils.getFullFileName(filePath, query.getTransId());
             final File file = new File(fullFileName);
             files = new File[]{file};
@@ -130,14 +130,14 @@ public class FileCompensationServiceImpl implements CompensationService {
     public Boolean updateRetry(final String id, final Integer retry, final String applicationName) {
         if (StringUtils.isBlank(id)
                 || StringUtils.isBlank(applicationName)
-                || Objects.isNull(retry)) {
+                || null == (retry)) {
             return false;
         }
         final String filePath = RepositoryPathUtils.buildFilePath(applicationName);
         final String fullFileName = RepositoryPathUtils.getFullFileName(filePath, id);
         final File file = new File(fullFileName);
         final CoordinatorRepositoryAdapter adapter = readRecover(file);
-        if (Objects.nonNull(adapter)) {
+        if (null != adapter) {
             try {
                 adapter.setLastTime(DateUtils.getDateYYYY());
             } catch (Exception e) {

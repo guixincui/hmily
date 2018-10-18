@@ -24,7 +24,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
  * TccTransactionHandler.
  * @author xiaoyu
  */
-@FunctionalInterface
+
 public interface HmilyTransactionHandler {
 
     /**

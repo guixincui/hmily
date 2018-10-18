@@ -20,9 +20,7 @@ package com.hmily.tcc.common.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * SerializeEnum.

@@ -50,12 +50,12 @@ public class HmilyFeignHandler implements InvocationHandler {
             return method.invoke(this, args);
         } else {
             final Tcc tcc = method.getAnnotation(Tcc.class);
-            if (Objects.isNull(tcc)) {
+            if (null == tcc) {
                 return this.handlers.get(method).invoke(args);
             }
             try {
                 final TccTransactionContext tccTransactionContext = TransactionContextLocal.getInstance().get();
-                if (Objects.nonNull(tccTransactionContext)) {
+                if (null != (tccTransactionContext)) {
                     if (tccTransactionContext.getRole() == TccRoleEnum.LOCAL.getCode()) {
                         tccTransactionContext.setRole(TccRoleEnum.INLINE.getCode());
                     }
@@ -80,7 +80,7 @@ public class HmilyFeignHandler implements InvocationHandler {
 
     private Participant buildParticipant(final Tcc tcc, final Method method, final Object[] args,
                                          final TccTransactionContext tccTransactionContext) {
-        if (Objects.isNull(tccTransactionContext)
+        if (null == tccTransactionContext
                 || (TccActionEnum.TRYING.getCode() != tccTransactionContext.getAction())) {
             return null;
         }

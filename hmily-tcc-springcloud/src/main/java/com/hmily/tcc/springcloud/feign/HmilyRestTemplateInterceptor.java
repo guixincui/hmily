@@ -39,7 +39,7 @@ public class HmilyRestTemplateInterceptor implements RequestInterceptor {
     @Override
     public void apply(final RequestTemplate requestTemplate) {
         final TccTransactionContext tccTransactionContext = TransactionContextLocal.getInstance().get();
-        if (Objects.nonNull(tccTransactionContext)) {
+        if (null != tccTransactionContext) {
             if (tccTransactionContext.getRole() == TccRoleEnum.LOCAL.getCode()) {
                 tccTransactionContext.setRole(TccRoleEnum.INLINE.getCode());
             }

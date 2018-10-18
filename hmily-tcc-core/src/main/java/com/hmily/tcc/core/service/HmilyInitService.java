@@ -22,7 +22,6 @@ import com.hmily.tcc.common.config.TccConfig;
 /**
  * @author xiaoyu
  */
-@FunctionalInterface
 public interface HmilyInitService {
 
     /**

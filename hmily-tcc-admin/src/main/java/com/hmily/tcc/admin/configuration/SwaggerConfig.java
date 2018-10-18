@@ -32,7 +32,7 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.time.LocalDate;
+import java.util.Date;
 
 import static com.google.common.collect.Lists.newArrayList;
 
@@ -61,7 +61,7 @@ public class SwaggerConfig {
     public Docket api() {
         return new Docket(DocumentationType.SWAGGER_2).apiInfo(apiInfo()).select().apis(RequestHandlerSelectors.withClassAnnotation(RestController.class))
                 // .paths(paths())
-                .build().pathMapping("/").directModelSubstitute(LocalDate.class, String.class)
+                .build().pathMapping("/").directModelSubstitute(Date.class, String.class)
                 .genericModelSubstitutes(ResponseEntity.class).useDefaultResponseMessages(false)
                 .globalResponseMessage(RequestMethod.GET,
                         newArrayList(new ResponseMessageBuilder().code(500).message("500 message")

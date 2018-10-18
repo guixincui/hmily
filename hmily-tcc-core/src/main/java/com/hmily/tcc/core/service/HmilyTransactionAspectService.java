@@ -23,7 +23,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 /**
  * @author xiaoyu
  */
-@FunctionalInterface
+
 public interface HmilyTransactionAspectService {
 
     /**

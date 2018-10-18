@@ -35,8 +35,6 @@ import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * file impl.
@@ -91,7 +89,7 @@ public class FileCoordinatorRepository implements CoordinatorRepository {
             final String fullFileName = RepositoryPathUtils.getFullFileName(filePath, tccTransaction.getTransId());
             final File file = new File(fullFileName);
             final CoordinatorRepositoryAdapter adapter = readAdapter(file);
-            if (Objects.nonNull(adapter)) {
+            if (null != adapter) {
                 adapter.setContents(serializer.serialize(tccTransaction.getParticipants()));
             }
             FileUtils.writeFile(fullFileName, serializer.serialize(adapter));
@@ -107,7 +105,7 @@ public class FileCoordinatorRepository implements CoordinatorRepository {
             final String fullFileName = RepositoryPathUtils.getFullFileName(filePath, id);
             final File file = new File(fullFileName);
             final CoordinatorRepositoryAdapter adapter = readAdapter(file);
-            if (Objects.nonNull(adapter)) {
+            if (null != adapter) {
                 adapter.setStatus(status);
             }
             FileUtils.writeFile(fullFileName, serializer.serialize(adapter));

@@ -19,13 +19,14 @@ package com.hmily.tcc.demo.springcloud.order.configuration;
 
 import com.hmily.tcc.springcloud.feign.HmilyFeignHandler;
 import com.hmily.tcc.springcloud.feign.HmilyRestTemplateInterceptor;
-import feign.Feign;
-import feign.InvocationHandlerFactory;
-import feign.Request;
-import feign.Retryer;
+import feign.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * MyConfiguration.
@@ -45,11 +46,14 @@ public class MyConfiguration {
 
     @Bean
     public InvocationHandlerFactory invocationHandlerFactory() {
-        return (target, dispatch) -> {
-            HmilyFeignHandler handler = new HmilyFeignHandler();
-            //handler.setTarget(target);
-            handler.setHandlers(dispatch);
-            return handler;
+        return new InvocationHandlerFactory() {
+            @Override
+            public InvocationHandler create(Target target, Map<Method, MethodHandler> dispatch) {
+                HmilyFeignHandler handler = new HmilyFeignHandler();
+                //handler.setTarget(target);
+                handler.setHandlers(dispatch);
+                return handler;
+            }
         };
     }
 

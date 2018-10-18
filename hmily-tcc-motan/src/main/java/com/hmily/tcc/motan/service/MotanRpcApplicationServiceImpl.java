@@ -22,8 +22,6 @@ import com.weibo.api.motan.config.springsupport.BasicServiceConfigBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 /**
  * MotanRpcApplicationServiceImpl.
  * @author xiaoyu
@@ -40,7 +38,7 @@ public class MotanRpcApplicationServiceImpl implements RpcApplicationService {
 
     @Override
     public String acquireName() {
-        return Optional.ofNullable(basicServiceConfigBean).orElse(build()).getModule();
+        return (basicServiceConfigBean == null ? build() : basicServiceConfigBean).getModule();
     }
 
     private BasicServiceConfigBean build() {
