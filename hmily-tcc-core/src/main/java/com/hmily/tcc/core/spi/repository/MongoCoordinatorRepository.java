@@ -33,7 +33,7 @@ import com.hmily.tcc.common.utils.RepositoryPathUtils;
 import com.hmily.tcc.core.spi.CoordinatorRepository;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
-import com.mongodb.client.result.UpdateResult;
+import com.mongodb.WriteResult;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,9 +116,9 @@ public class MongoCoordinatorRepository implements CoordinatorRepository {
         } catch (TccException e) {
             e.printStackTrace();
         }
-        final UpdateResult updateResult = template.updateFirst(query, update, MongoAdapter.class, collectionName);
+        final WriteResult result = template.updateFirst(query, update, MongoAdapter.class, collectionName);
 
-        if (updateResult.getModifiedCount() <= 0) {
+        if (result.getN() <= 0) {
             throw new TccRuntimeException("update data exception!");
         }
         return ROWS;
@@ -134,8 +134,8 @@ public class MongoCoordinatorRepository implements CoordinatorRepository {
         } catch (TccException e) {
             e.printStackTrace();
         }
-        final UpdateResult updateResult = template.updateFirst(query, update, MongoAdapter.class, collectionName);
-        if (updateResult.getModifiedCount() <= 0) {
+        final WriteResult result = template.updateFirst(query, update, MongoAdapter.class, collectionName);
+        if (result.getN() <= 0) {
             throw new TccRuntimeException("update data exception!");
         }
         return ROWS;
@@ -147,8 +147,8 @@ public class MongoCoordinatorRepository implements CoordinatorRepository {
         query.addCriteria(new Criteria("transId").is(id));
         Update update = new Update();
         update.set("status", status);
-        final UpdateResult updateResult = template.updateFirst(query, update, MongoAdapter.class, collectionName);
-        if (updateResult.getModifiedCount() <= 0) {
+        final WriteResult result = template.updateFirst(query, update, MongoAdapter.class, collectionName);
+        if (result.getN() <= 0) {
             throw new TccRuntimeException("update data exception!");
         }
         return ROWS;

@@ -34,7 +34,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.9.RELEASE</version>
+        <version>1.5.17.RELEASE</version>
     </parent>
 
     <developers>
@@ -52,14 +52,14 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>1.7</jdk.version>
-        <spring.version>5.0.7.RELEASE</spring.version>
+        <spring.version>4.3.19.RELEASE</spring.version>
         <spring-cloud.version>Finchley.RELEASE</spring-cloud.version>
         <dubbo.version>2.6.2</dubbo.version>
         <mongo.driver.version>3.5.0</mongo.driver.version>
         <mysql-connector-java>5.1.46</mysql-connector-java>
         <commons-lang3.version>3.3.2</commons-lang3.version>
         <guava.version>20.0</guava.version>
-        <spring.data.mongodb.version>2.0.8.RELEASE</spring.data.mongodb.version>
+        <spring.data.mongodb.version>1.10.16.RELEASE</spring.data.mongodb.version>
         <hessian.version>4.0.38</hessian.version>
         <protostuff.version>1.0.8</protostuff.version>
         <kryo.version>4.0.0</kryo.version>
@@ -73,7 +73,7 @@
         <lombok.version>1.16.14</lombok.version>
         <motan.version>1.0.0</motan.version>
         <disruptor.version>3.4.0</disruptor.version>
-        <hikaricp.version>3.2.0</hikaricp.version>
+        <hikaricp.version>2.4.13</hikaricp.version>
         <eureka.version>1.4.5.RELEASE</eureka.version>
 
     </properties>
@@ -169,7 +169,7 @@
 
             <dependency>
                 <groupId>com.zaxxer</groupId>
-                <artifactId>HikariCP</artifactId>
+                <artifactId>HikariCP-java7</artifactId>
                 <version>${hikaricp.version}</version>
             </dependency>
 

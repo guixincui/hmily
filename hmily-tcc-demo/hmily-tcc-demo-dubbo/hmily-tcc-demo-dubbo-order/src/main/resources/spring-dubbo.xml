@@ -13,7 +13,7 @@
 
     <dubbo:registry protocol="zookeeper" address="172.16.0.192:2181"/>
 
-    <dubbo:protocol accesslog="true" name="dubbo" port="20886" host="127.0.0.1"/>
+    <dubbo:protocol accesslog="true" name="dubbo" port="20886" host="172.16.3.16"/>
 
     <dubbo:reference timeout="10000"
                      interface="com.hmily.tcc.demo.dubbo.inventory.api.service.InventoryService"

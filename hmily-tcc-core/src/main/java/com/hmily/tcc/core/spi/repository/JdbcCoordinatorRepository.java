@@ -204,6 +204,7 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
             if (tccDbConfig.getDataSource() != null && StringUtils.isBlank(tccDbConfig.getUrl())) {
                 dataSource = tccDbConfig.getDataSource();
             } else {
+
                 HikariDataSource hikariDataSource = new HikariDataSource();
                 hikariDataSource.setJdbcUrl(tccDbConfig.getUrl());
                 hikariDataSource.setDriverClassName(tccDbConfig.getDriverClassName());

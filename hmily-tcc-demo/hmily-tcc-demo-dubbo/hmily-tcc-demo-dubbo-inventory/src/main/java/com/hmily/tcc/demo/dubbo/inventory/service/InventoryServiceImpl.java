@@ -61,6 +61,9 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public Boolean decrease(InventoryDTO inventoryDTO) {
         final InventoryDO entity = inventoryMapper.findByProductId(inventoryDTO.getProductId());
+        if (entity.getTotalInventory() < inventoryDTO.getCount()) {
+            throw new TccRuntimeException("库存不足！");
+        }
         entity.setTotalInventory(entity.getTotalInventory() - inventoryDTO.getCount());
         entity.setLockInventory(entity.getLockInventory() + inventoryDTO.getCount());
         inventoryMapper.decrease(entity);

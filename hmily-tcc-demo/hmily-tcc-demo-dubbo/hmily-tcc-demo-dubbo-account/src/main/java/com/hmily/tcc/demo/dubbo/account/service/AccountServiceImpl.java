@@ -18,6 +18,7 @@
 package com.hmily.tcc.demo.dubbo.account.service;
 
 import com.hmily.tcc.annotation.Tcc;
+import com.hmily.tcc.common.exception.TccRuntimeException;
 import com.hmily.tcc.demo.dubbo.account.api.dto.AccountDTO;
 import com.hmily.tcc.demo.dubbo.account.api.dto.AccountNestedDTO;
 import com.hmily.tcc.demo.dubbo.account.api.entity.AccountDO;
@@ -70,6 +71,9 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     public boolean payment(AccountDTO accountDTO) {
         final AccountDO accountDO = accountMapper.findByUserId(accountDTO.getUserId());
+        if (accountDO.getBalance().compareTo(accountDTO.getAmount()) < 0) {
+            throw new TccRuntimeException("余额不足！");
+        }
         accountDO.setBalance(accountDO.getBalance().subtract(accountDTO.getAmount()));
         accountDO.setFreezeAmount(accountDO.getFreezeAmount().add(accountDTO.getAmount()));
         accountDO.setUpdateTime(new Date());
