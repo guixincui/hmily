@@ -20,6 +20,7 @@ package com.hmily.tcc.core.service.handler;
 import com.hmily.tcc.common.bean.context.TccTransactionContext;
 import com.hmily.tcc.common.bean.entity.TccTransaction;
 import com.hmily.tcc.common.enums.TccActionEnum;
+import com.hmily.tcc.core.concurrent.threadlocal.TransactionContextLocal;
 import com.hmily.tcc.core.concurrent.threadpool.HmilyThreadFactory;
 import com.hmily.tcc.core.service.HmilyTransactionHandler;
 import com.hmily.tcc.core.service.executor.HmilyTransactionExecutor;
@@ -76,6 +77,7 @@ public class StarterHmilyTransactionHandler implements HmilyTransactionHandler {
             final TccTransaction currentTransaction = hmilyTransactionExecutor.getCurrentTransaction();
             executor.execute(() -> hmilyTransactionExecutor.confirm(currentTransaction));
         } finally {
+            TransactionContextLocal.getInstance().remove();
             hmilyTransactionExecutor.remove();
         }
         return returnValue;

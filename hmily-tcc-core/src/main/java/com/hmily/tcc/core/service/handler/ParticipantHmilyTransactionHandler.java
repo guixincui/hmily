@@ -22,6 +22,7 @@ import com.hmily.tcc.common.bean.entity.TccTransaction;
 import com.hmily.tcc.common.enums.TccActionEnum;
 import com.hmily.tcc.common.utils.DefaultValueUtils;
 import com.hmily.tcc.core.cache.TccTransactionCacheManager;
+import com.hmily.tcc.core.concurrent.threadlocal.TransactionContextLocal;
 import com.hmily.tcc.core.service.HmilyTransactionHandler;
 import com.hmily.tcc.core.service.executor.HmilyTransactionExecutor;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -62,9 +63,11 @@ public class ParticipantHmilyTransactionHandler implements HmilyTransactionHandl
                 } catch (Throwable throwable) {
                     //if exception ,delete log.
                     hmilyTransactionExecutor.deleteTransaction(tccTransaction);
+                    throw throwable;
+                } finally {
+                    TransactionContextLocal.getInstance().remove();
                     assert tccTransaction != null;
                     TccTransactionCacheManager.getInstance().removeByKey(tccTransaction.getTransId());
-                    throw throwable;
                 }
             case CONFIRMING:
                 currentTransaction = TccTransactionCacheManager.getInstance().getTccTransaction(context.getTransId());
