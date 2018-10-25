@@ -220,6 +220,8 @@ public class HmilyTransactionExecutor {
                     LOGGER.error("execute confirm :{}", e);
                     success = false;
                     failList.add(participant);
+                } finally {
+                    TransactionContextLocal.getInstance().remove();
                 }
             }
             executeHandler(success, currentTransaction, failList);
@@ -261,6 +263,8 @@ public class HmilyTransactionExecutor {
                     LOGGER.error("execute cancel ex:{}", e);
                     success = false;
                     failList.add(participant);
+                } finally {
+                    TransactionContextLocal.getInstance().remove();
                 }
             }
             executeHandler(success, currentTransaction, failList);
@@ -268,7 +272,7 @@ public class HmilyTransactionExecutor {
     }
 
     private void executeHandler(final boolean success, final TccTransaction currentTransaction, final List<Participant> failList) {
-        TransactionContextLocal.getInstance().remove();
+        //TransactionContextLocal.getInstance().remove();
         TccTransactionCacheManager.getInstance().removeByKey(currentTransaction.getTransId());
         if (success) {
             deleteTransaction(currentTransaction);
